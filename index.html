@@ -278,7 +278,6 @@
                 return '<p class="text-xs text-slate-400 italic py-2">Détail par groupe indisponible.</p>';
             }
 
-            // Normalisation, ajout des métadonnées et tri de Gauche à Droite
             const groupesTries = votesGroupes.map(g => {
                 const nom = getNomGroupe(g.nom_groupe);
                 const meta = getMetadonneesGroupe(nom);
@@ -296,7 +295,7 @@
                             <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Contre</span>
                             <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Abstention</span>
                         </span>
-                        <span>Position majoritaire</span>
+                        <span class="text-[10px] text-indigo-600 italic">💡 ️Survolez ou cliquez sur les barres/chiffres</span>
                     </div>
 
                     <div class="space-y-2">
@@ -316,19 +315,28 @@
                                 majColor = "text-rose-600";
                             }
 
+                            // Tooltip complet pour le survol (ordinateur)
+                            const tooltipTexte = `${g.nom} — Pour : ${g.pour} (${Math.round(pctPour)}%) | Contre : ${g.contre} (${Math.round(pctContre)}%) | Abstention : ${g.abstention} (${Math.round(pctAbst)}%)`;
+
                             return `
-                                <div class="space-y-0.5">
+                                <div class="space-y-0.5" title="${tooltipTexte}">
                                     <div class="flex items-center justify-between text-xs">
                                         <span class="font-medium text-slate-800 truncate pr-2 flex items-center gap-1.5">
                                             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${g.meta.color}"></span>
                                             ${g.nom}
                                         </span>
-                                        <span class="font-bold text-[11px] ${majColor} flex-shrink-0">${majTexte}</span>
+                                        <!-- Cliquable sur mobile/desktop pour alterner % et voix brutes -->
+                                        <span onclick="basculerAffichageVoix(this)" 
+                                              data-pour="${pctPour}" data-contre="${pctContre}" data-abst="${pctAbst}"
+                                              data-v-pour="${g.pour}" data-v-contre="${g.contre}" data-v-abst="${g.abstention}"
+                                              class="font-bold text-[11px] ${majColor} flex-shrink-0 cursor-pointer select-none" title="Cliquer pour voir les voix exactes">
+                                            ${majTexte}
+                                        </span>
                                     </div>
-                                    <div class="barre-progression">
-                                        <span class="bg-pour" style="width: ${pctPour}%" title="Pour: ${g.pour}"></span>
-                                        <span class="bg-contre" style="width: ${pctContre}%" title="Contre: ${g.contre}"></span>
-                                        <span class="bg-abstention" style="width: ${pctAbst}%" title="Abstention: ${g.abstention}"></span>
+                                    <div class="barre-progression" title="${tooltipTexte}">
+                                        <span class="bg-pour" style="width: ${pctPour}%"></span>
+                                        <span class="bg-contre" style="width: ${pctContre}%"></span>
+                                        <span class="bg-abstention" style="width: ${pctAbst}%"></span>
                                     </div>
                                 </div>
                             `;
@@ -336,6 +344,27 @@
                     </div>
                 </div>
             `;
+        }
+
+
+        function basculerAffichageVoix(element) {
+            const pPour = element.getAttribute('data-pour');
+            const pContre = element.getAttribute('data-contre');
+            const pAbst = element.getAttribute('data-abst');
+            
+            const vPour = element.getAttribute('data-v-pour');
+            const vContre = element.getAttribute('data-v-contre');
+            const vAbst = element.getAttribute('data-v-abst');
+
+            const texteActuel = element.innerText;
+            const texteVoix = `${vPour}p / ${vContre}c / ${vAbst}a`;
+
+            // Si on affiche déjà les voix, on remet les pourcentages, sinon l'inverse
+            if (texteActuel.includes('p /')) {
+                element.innerText = `${Math.round(pPour)}% / ${Math.round(pContre)}%`;
+            } else {
+                element.innerText = texteVoix;
+            }
         }
 
         function afficherScrutins() {
