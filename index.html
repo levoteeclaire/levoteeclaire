@@ -286,8 +286,11 @@
 
                     <!-- Titre -->
                     <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-3">
-                        ${scrutin.titre_vulgarise || 'Titre non disponible'}
+                        ${scrutin.titre_officiel || 'Titre non disponible'}
                     </h3>
+                    <h4 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-3">
+                        ${scrutin.titre_vulgarise || 'Titre non disponible'}
+                    </h4>
 
                     <!-- Onglets mobiles -->
                     <div class="flex md:hidden bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
