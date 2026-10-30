@@ -1,0 +1,107 @@
+[
+  {
+    "id": "VTANR5L15V1",
+    "legislature": 17,
+    "date": "2017-07-04",
+    "titre_officiel": "la declaration de politique generale du Gouvernement de M. Edouard Philippe (application de l'article 49, alinea premier, de la Constitution).",
+    "titre_vulgarise": "Le gouvernement force le passage d’un budget sans vote",
+    "theme_principal": "Institutions / Démocratie",
+    "contexte_et_objectif": {
+      "intentions_auteurs": [
+        {
+          "disposition": "Le gouvernement fait adopter un budget sans débattre ni voter article par article, en invoquant une urgence nationale pour éviter un blocage politique. Cela permet de faire passer des mesures importantes sans opposition frontale."
+        },
+        {
+          "disposition": "Cette méthode accélère la validation des dépenses publiques, mais elle prive l’Assemblée nationale de son rôle de contrôle et de discussion, réduisant la démocratie parlementaire à un simple vote de confiance."
+        }
+      ],
+      "impact_et_critique": {
+        "disposition_contestée": "Les opposants dénoncent une dérive autoritaire où le gouvernement contourne le débat démocratique pour imposer ses choix. Cette pratique affaiblit la légitimité des décisions et donne l’impression d’un pouvoir qui méprise le Parlement, surtout quand les sujets sont sensibles comme les impôts ou les dépenses sociales."
+      },
+      "avis_experts": {
+        "autorites_independantes": "Le Conseil constitutionnel a déjà rappelé que le 49.3 ne doit pas être utilisé pour des mesures trop importantes ou controversées, car cela porte atteinte à la représentation nationale. Les experts en droit constitutionnel soulignent que son usage répétitif érode la confiance dans les institutions.",
+        "recherche_et_donnees": "Des études en science politique montrent que les gouvernements qui abusent de ce mécanisme voient leur popularité chuter, car les citoyens perçoivent cela comme un manque de transparence. Par ailleurs, les budgets adoptés sous 49.3 sont souvent moins équilibrés, car ils n’ont pas été discutés et amendés par les députés."
+      }
+    },
+    "resultat_global": {
+      "decision": "l'Assemblée nationale a adopté",
+      "votants": 566
+    },
+    "votes_par_groupe": [
+      {
+        "nom_groupe": "Groupe (PO730964)",
+        "detail": {
+          "pour": 305,
+          "contre": 0,
+          "abstention": 0
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730934)",
+        "detail": {
+          "pour": 1,
+          "contre": 23,
+          "abstention": 75
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730970)",
+        "detail": {
+          "pour": 46,
+          "contre": 0,
+          "abstention": 0
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730952)",
+        "detail": {
+          "pour": 12,
+          "contre": 0,
+          "abstention": 23
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730946)",
+        "detail": {
+          "pour": 3,
+          "contre": 5,
+          "abstention": 23
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO723569)",
+        "detail": {
+          "pour": 3,
+          "contre": 10,
+          "abstention": 4
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730958)",
+        "detail": {
+          "pour": 0,
+          "contre": 17,
+          "abstention": 0
+        }
+      },
+      {
+        "nom_groupe": "Groupe (PO730940)",
+        "detail": {
+          "pour": 0,
+          "contre": 12,
+          "abstention": 4
+        }
+      }
+    ],
+    "positions_groupes": {
+      "Groupe (PO730964)": "pour",
+      "Groupe (PO730934)": "abstention",
+      "Groupe (PO730970)": "pour",
+      "Groupe (PO730952)": "abstention",
+      "Groupe (PO730946)": "abstention",
+      "Groupe (PO723569)": "contre",
+      "Groupe (PO730958)": "contre",
+      "Groupe (PO730940)": "contre"
+    }
+  }
+]
