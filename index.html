@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
@@ -24,10 +28,10 @@
         </div>
     </header>
 
-    <!-- Contenu Principal -->
+    <!-- Contenu Principal (Flux continu) -->
     <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4">
         
-        <!-- Zone de Filtres & Recherche -->
+        <!-- Zone de Filtres & Recherche (Sticky sur mobile pour un confort maximal) -->
         <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
@@ -40,7 +44,7 @@
                 >
             </div>
 
-            <!-- Filtres thématiques sur plusieurs lignes (flex-wrap) pour tout voir sans scroll -->
+            <!-- Filtres thématiques sur plusieurs lignes -->
             <div>
                 <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Thématiques</span>
                 <div id="theme-filters" class="flex flex-wrap gap-1.5">
@@ -49,7 +53,7 @@
             </div>
         </div>
 
-        <!-- Conteneur des cartes de scrutins -->
+        <!-- Conteneur des cartes de scrutins (Flux vertical infini) -->
         <section id="scrutins-container" class="space-y-4">
             <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
         </section>
@@ -121,19 +125,13 @@
 
         function getNomGroupe(nomBrut) {
             if (!nomBrut) return "Groupe inconnu";
-            
-            // 1. Recherche d'un code PO... dans la chaîne
             const matchPo = nomBrut.match(/(PO\d+)/);
             if (matchPo && MAPPING_GROUPES[matchPo[1]]) {
                 return MAPPING_GROUPES[matchPo[1]];
             }
-            
-            // 2. Correspondance directe
             if (MAPPING_GROUPES[nomBrut.trim()]) {
                 return MAPPING_GROUPES[nomBrut.trim()];
             }
-            
-            // 3. Nettoyage de secours automatique
             let net = nomBrut.replace(/Groupe\s*\([^)]+\)/g, '').trim();
             return net.length > 0 ? net : nomBrut;
         }
@@ -216,23 +214,6 @@
             afficherScrutins();
         }
 
-        function switcherSousOnglet(cardIdx, sectionName) {
-            const sections = ['vote', 'essentiel', 'debat', 'experts'];
-            sections.forEach(sec => {
-                const el = document.getElementById(`card-${cardIdx}-${sec}`);
-                const btn = document.getElementById(`btn-${cardIdx}-${sec}`);
-                if (el && btn) {
-                    if (sec === sectionName) {
-                        el.classList.remove('hidden');
-                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition";
-                    } else {
-                        el.classList.add('hidden');
-                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition";
-                    }
-                }
-            });
-        }
-
         function afficherScrutins() {
             const container = document.getElementById('scrutins-container');
             if (!container) return;
@@ -257,6 +238,7 @@
                 return;
             }
 
+            // Génération du flux continu vertical (Infinite Feed)
             container.innerHTML = filtrés.map((scrutin, idx) => {
                 const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
                 const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
@@ -278,7 +260,7 @@
                         </div>
                     </div>
 
-                    <!-- Titre vulgarisé mis en valeur et titre officiel en sous-titre discret -->
+                    <!-- Titre vulgarisé mis en valeur et titre officiel discret -->
                     <div class="mb-4">
                         <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-1">
                             ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
@@ -288,42 +270,37 @@
                         </p>
                     </div>
 
-                    <!-- Onglets mobiles -->
-                    <div class="flex md:hidden bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
-                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
-                        <button id="btn-${idx}-essentiel" onclick="switcherSousOnglet(${idx}, 'essentiel')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">📋 Mesures</button>
-                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
-                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
-                    </div>
-
-                    <!-- Contenu -->
+                    <!-- Contenu en Flux Continu (Visible directement sans onglets) -->
                     <div class="space-y-4">
                         
                         <!-- 1. Graphique / Vote -->
-                        <div id="card-${idx}-vote" class="block space-y-2">
-                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:block mb-2">Ventilation du vote</h4>
+                        <div class="space-y-2">
+                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ventilation du vote</h4>
                             <div class="h-48 sm:h-56 relative pt-1">
                                 <canvas id="chart-${idx}"></canvas>
                             </div>
                         </div>
 
-                        <!-- Grille Desktop des 3 blocs d'analyse -->
-                        <div class="grid md:grid-cols-3 gap-3">
-                            <div id="card-${idx}-essentiel" class="block space-y-3 pt-1">
+                        <!-- Grille / Blocs d'analyse textuelle -->
+                        <div class="grid md:grid-cols-3 gap-3 pt-2">
+                            <!-- Mesures -->
+                            <div class="space-y-3">
                                 <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 h-full">
                                     <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">📋 Ce que change la loi</strong>
                                     ${blocs.intentionsHtml}
                                 </div>
                             </div>
 
-                            <div id="card-${idx}-debat" class="hidden md:block space-y-3 pt-1">
+                            <!-- Points de clivage -->
+                            <div class="space-y-3">
                                 <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
                                     <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
                                     ${blocs.critiqueHtml}
                                 </div>
                             </div>
 
-                            <div id="card-${idx}-experts" class="hidden md:block pt-1">
+                            <!-- Fact-check & Experts -->
+                            <div class="pt-1 md:pt-0">
                                 <div class="bg-purple-50/60 p-3 rounded-xl border border-purple-200 h-full">
                                     <div class="flex items-center justify-between mb-1">
                                         <span class="text-[10px] font-bold text-purple-950 uppercase tracking-wider">🔍 Fact-check & Experts</span>
@@ -340,7 +317,7 @@
                 </article>`;
             }).join('');
 
-            // Rendu des graphiques avec les noms traduits des groupes
+            // Rendu des graphiques
             filtrés.forEach((scrutin, idx) => {
                 if (scrutin.votes_par_groupe) {
                     rendreGraphique(`chart-${idx}`, scrutin.votes_par_groupe);
