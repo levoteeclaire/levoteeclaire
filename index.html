@@ -4,321 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Vote Éclairé - Les votes de l'Assemblée nationale</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg: #f1f5f9;
-            --surface: #ffffff;
-            --border: #e2e8f0;
-            --text: #1e293b;
-            --text-strong: #0f172a;
-            --text-soft: #475569;
-            --text-faint: #64748b;
-            --accent: #4f46e5;
-            --accent-strong: #4338ca;
-            --accent-soft: #eef2ff;
-
-            --pour: #10b981;   --pour-txt: #047857;
-            --contre: #f43f5e; --contre-txt: #be123c;
-            --abst: #cbd5e1;   --abst-txt: #475569;
-
-            --radius: 16px;
-            --tap: 44px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; }
-        html { -webkit-text-size-adjust: 100%; }
-        body {
-            margin: 0;
-            min-height: 100vh;
+        .barre-progression {
             display: flex;
-            flex-direction: column;
-            background: var(--bg);
-            color: var(--text);
-            font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
+            height: 10px;
+            border-radius: 9999px;
+            overflow: hidden;
+            background-color: #f1f5f9;
         }
-        button, input { font: inherit; color: inherit; }
-        button { cursor: pointer; }
-        :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-
-        /* ---------- En-tête ---------- */
-        .site-header {
-            position: sticky; top: 0; z-index: 50;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
+        .barre-progression > span {
+            height: 100%;
+            transition: width 0.3s ease;
         }
-        .site-header__inner {
-            max-width: 56rem; margin: 0 auto; padding: 10px 16px;
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-        }
-        .brand { display: flex; align-items: center; gap: 8px; }
-        .brand h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-strong); }
-        .pill-live {
-            font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px;
-            background: var(--accent-soft); color: var(--accent-strong); border: 1px solid #e0e7ff;
-        }
-
-        /* ---------- Contenu ---------- */
-        main {
-            flex: 1 0 auto; width: 100%; max-width: 56rem; margin: 0 auto;
-            padding: 16px 12px; display: grid; gap: 16px; align-content: start;
-        }
-        @media (min-width: 640px) { main { padding: 16px; } }
-
-        .panel-box {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 14px; display: grid; gap: 12px;
-        }
-
-        /* Recherche */
-        .search { position: relative; }
-        .search__icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-        .search input {
-            width: 100%; min-height: 48px; padding: 0 44px 0 42px;
-            background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
-            font-size: 16px;
-            -webkit-appearance: none; appearance: none;
-        }
-        .search input::placeholder { color: var(--text-faint); }
-        .search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #c7d2fe; background: #fff; }
-        .search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-        .search__clear {
-            position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
-            width: var(--tap); height: var(--tap); border: 0; background: transparent;
-            border-radius: 12px; color: var(--text-soft); font-size: 20px; line-height: 1;
-        }
-        .search__clear[hidden] { display: none; }
-
-        /* Filtres thématiques */
-        .filters-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
-        .chips {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
-            scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
-        }
-        .chip {
-            flex: 0 0 auto; min-height: var(--tap); padding: 0 16px;
-            border-radius: 999px; border: 1px solid var(--border);
-            background: #f1f5f9; color: var(--text-soft);
-            font-size: 14px; font-weight: 500; white-space: nowrap; scroll-snap-align: start;
-        }
-        .chip:hover { background: var(--border); }
-        .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-        @media (min-width: 768px) {
-            .chips { flex-wrap: wrap; overflow: visible; }
-            .chip { min-height: 40px; }
-        }
-
-        .compteur { margin: 0; font-size: 13px; color: var(--text-soft); }
-
-        /* ---------- Carte de scrutin ---------- */
-        .liste { display: grid; gap: 16px; }
-        .card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 16px;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
-        }
-        @media (min-width: 640px) { .card { padding: 24px; } }
-
-        .card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-        .tag { font-size: 13px; font-weight: 600; padding: 2px 10px; background: #f1f5f9; color: var(--text-soft); border-radius: 8px; }
-        .card__meta { display: flex; align-items: center; gap: 8px; }
-        .date { font-size: 13px; color: var(--text-soft); }
-        .badge { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid; }
-        .badge--ok { background: #ecfdf5; color: var(--pour-txt); border-color: #a7f3d0; }
-        .badge--ko { background: #fff1f2; color: var(--contre-txt); border-color: #fecdd3; }
-
-        .card__title { margin: 0 0 4px; font-size: 18px; line-height: 1.3; font-weight: 700; color: var(--text-strong); }
-        @media (min-width: 640px) { .card__title { font-size: 20px; } }
-        .card__official {
-            margin: 0 0 14px; font-size: 13px; font-style: italic; color: var(--text-faint);
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
-
-        /* Score global */
-        .score { margin-bottom: 16px; }
-        .score__nums { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin-bottom: 8px; }
-        .score__n { font-size: 14px; color: var(--text-soft); }
-        .score__n b { font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
-        .score__n--pour b { color: var(--pour-txt); }
-        .score__n--contre b { color: var(--contre-txt); }
-        .score__n--abst b { color: var(--abst-txt); }
-        .score__marge { margin: 8px 0 0; font-size: 13px; color: var(--text-soft); }
-
-        .bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #f1f5f9; }
-        .bar--big { height: 16px; }
-        .bar > span { display: block; height: 100%; }
-        .seg-pour { background: var(--pour); }
-        .seg-contre { background: var(--contre); }
-        .seg-abst { background: var(--abst); }
-
-        /* ---------- Onglets / Blocs ---------- */
-        .tabs {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-            background: #f1f5f9; padding: 4px; border-radius: 14px;
-            border: 1px solid #e2e8f0; margin-bottom: 14px;
-        }
-        .tabs button {
-            min-height: 52px; padding: 4px 2px; border: 0; background: transparent; border-radius: 10px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
-            font-size: 13px; font-weight: 500; color: var(--text-soft);
-        }
-        .tabs button span:first-child { font-size: 16px; line-height: 1.2; }
-        .tabs button[aria-selected="true"] {
-            background: #fff; color: var(--accent-strong); font-weight: 700;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, .12);
-        }
-
-        .pane { display: none; }
-        .card[data-tab="vote"] .pane--vote,
-        .card[data-tab="essentiel"] .pane--essentiel,
-        .card[data-tab="debat"] .pane--debat,
-        .card[data-tab="experts"] .pane--experts { display: block; }
-
-        .analyses { display: block; }
-
-        @media (min-width: 768px) {
-            .tabs { display: none; }
-            .pane { display: block; }
-            .analyses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-        }
-
-        .pane-title { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--text-strong); }
-        @media (max-width: 767px) { .pane--vote .pane-title { display: none; } }
-
-        .bloc { height: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid; border-left-width: 4px; font-size: 14px; line-height: 1.55; color: var(--text); }
-        .bloc__title { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 700; }
-        .bloc--essentiel { background: #eff6ff; border-color: #dbeafe; border-left-color: #3b82f6; }
-        .bloc--essentiel .bloc__title { color: #1e3a8a; }
-        .bloc--debat { background: #fffbeb; border-color: #fef3c7; border-left-color: #f59e0b; }
-        .bloc--debat .bloc__title { color: #78350f; }
-        .bloc--experts { background: #faf5ff; border-color: #e9d5ff; border-left-color: #a855f7; }
-        .bloc--experts .bloc__title { color: #3b0764; }
-        .bloc__item { margin-bottom: 6px; padding-left: 14px; position: relative; }
-        .bloc__item::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
-        .bloc__vide { color: var(--text-faint); font-style: italic; }
-
-        /* ---------- Barres par groupe (100 %, noms complets) ---------- */
-        .legende { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 10px; padding: 0; list-style: none; font-size: 13px; color: var(--text-soft); }
-        .legende i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-
-        .groupes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-        @media (min-width: 640px) { .groupes { grid-template-columns: 1fr 1fr; column-gap: 28px; } }
-        
-        /* Grille adaptée : Nom complet du groupe à gauche, barre au milieu, pourcentage à droite */
-        .groupe { display: grid; grid-template-columns: minmax(130px, 1fr) 110px 72px; align-items: center; gap: 8px; min-height: 28px; }
-        .nom-groupe { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .nom-groupe i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--c, #94a3b8); }
-        
-        .position { text-align: right; font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-        .position--pour { color: var(--pour-txt); }
-        .position--contre { color: var(--contre-txt); }
-        .position--abst { color: var(--abst-txt); }
-
-        /* ---------- Divers ---------- */
-        .plus {
-            display: block; width: 100%; min-height: 48px; border-radius: 12px;
-            border: 1px solid var(--accent); background: #fff; color: var(--accent-strong);
-            font-size: 15px; font-weight: 600;
-        }
-        .plus:hover { background: var(--accent-soft); }
-        .plus[hidden] { display: none; }
-
-        .etat { text-align: center; padding: 40px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-soft); font-size: 14px; }
-        .etat--erreur { border-color: #fecdd3; }
-        .etat--erreur strong { display: block; color: var(--contre-txt); margin-bottom: 4px; }
-
-        .site-footer { border-top: 1px solid var(--border); background: var(--surface); padding: 16px; text-align: center; font-size: 13px; color: var(--text-soft); }
-        .site-footer p { margin: 0; }
-
-        @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+        .bg-pour { background-color: #10b981; }
+        .bg-contre { background-color: #f43f5e; }
+        .bg-abstention { background-color: #cbd5e1; }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
-    <header class="site-header">
-        <div class="site-header__inner">
-            <div class="brand">
-                <span aria-hidden="true" style="font-size:20px">🏛️</span>
-                <h1>Le Vote Éclairé</h1>
+    <!-- En-tête -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-2xs">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🏛️</span>
+                <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
             </div>
-            <span class="pill-live">Direct Assemblée</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
+                Direct Assemblée
+            </span>
         </div>
     </header>
 
-    <main>
-        <div class="panel-box">
-            <div class="search">
-                <span class="search__icon" aria-hidden="true">🔍</span>
-                <input type="search" id="searchInput" enterkeyhint="search" autocomplete="off"
-                       placeholder="Rechercher un sujet, un mot-clé…" aria-label="Rechercher un scrutin">
-                <button type="button" class="search__clear" id="searchClear" aria-label="Effacer la recherche" hidden>×</button>
+    <!-- Contenu Principal -->
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4">
+        
+        <!-- Zone de Filtres & Recherche -->
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    oninput="gererRecherche()" 
+                    placeholder="Rechercher un sujet, un mot-clé (ex: écologie, budget)..." 
+                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                >
             </div>
 
+            <!-- Filtres thématiques -->
             <div>
-                <span class="filters-label" id="themes-label">Thématiques</span>
-                <div id="theme-filters" class="chips" role="group" aria-labelledby="themes-label">
-                    <button type="button" class="chip" data-theme="TOUS" aria-pressed="true">Tous</button>
+                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Thématiques</span>
+                <div id="theme-filters" class="flex flex-wrap gap-1.5">
+                    <button onclick="filtrerTheme('TOUS')" class="btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition">Tous</button>
                 </div>
             </div>
         </div>
 
-        <p class="compteur" id="compteur" aria-live="polite"></p>
-
-        <section id="scrutins-container" class="liste" aria-label="Liste des scrutins">
-            <div class="etat">Chargement des scrutins…</div>
+        <!-- Conteneur des cartes de scrutins -->
+        <section id="scrutins-container" class="space-y-4">
+            <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
         </section>
 
-        <button type="button" class="plus" id="plus" hidden></button>
     </main>
 
-    <footer class="site-footer">
+    <!-- Pied de page -->
+    <footer class="border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
         <p>Données officielles en Open Data • Traitement pédagogique neutre par IA</p>
     </footer>
 
+    <!-- JavaScript -->
     <script>
-        'use strict';
-
-        const PAGE_SIZE = 15;
-        const DEBOUNCE_MS = 200;
-
         let scrutinsData = [];
-        let filtres = [];
-        let affiches = 0;
         let themeActif = 'TOUS';
         let termeRecherche = '';
-        let cardSeq = 0;
 
-        const $container = document.getElementById('scrutins-container');
-        const $filters = document.getElementById('theme-filters');
-        const $search = document.getElementById('searchInput');
-        const $clear = document.getElementById('searchClear');
-        const $compteur = document.getElementById('compteur');
-        const $plus = document.getElementById('plus');
-
-        const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ESC[c]);
-
-        const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-
-        function collecterTexte(v, out = []) {
-            if (v == null) return out;
-            if (typeof v === 'object') Object.values(v).forEach(x => collecterTexte(x, out));
-            else out.push(String(v));
-            return out;
-        }
-
-        const nombre = v => {
-            if (typeof v === 'number' && isFinite(v)) return v;
-            if (typeof v === 'string' && v.trim() !== '' && isFinite(+v)) return +v;
-            return null;
-        };
-        const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
-
+        // Mapping complet des groupes parlementaires (17e, 16e, 15e législatures)
         const MAPPING_GROUPES = {
             "PO840056": "Non inscrit",
             "PO845401": "Rassemblement National",
             "PO845407": "Ensemble pour la République",
-            "PO845413": "La France insoumise - Nouveau Front Populaire",
+            "PO845413": "La France insoumise - NFP",
             "PO845419": "Socialistes et apparentés",
             "PO845425": "Droite Républicaine",
             "PO845439": "Écologiste et Social",
@@ -331,7 +99,7 @@
             "PO872880": "Union des droites pour la République",
 
             "PO793087": "Non inscrit",
-            "PO800484": "Démocrate (MoDem et Indépendants)",
+            "PO800484": "Démocrate (MoDem)",
             "PO800490": "La France insoumise - NUPES",
             "PO800496": "Socialistes et apparentés",
             "PO800502": "Gauche démocrate et républicaine",
@@ -339,7 +107,7 @@
             "PO800514": "Horizons et apparentés",
             "PO800520": "Rassemblement National",
             "PO800526": "Écologiste",
-            "PO800532": "Libertés, Indépendants, Outre-mer et Territoires",
+            "PO800532": "LIOT",
             "PO800538": "Renaissance",
             "PO830170": "Socialistes et apparentés",
 
@@ -347,376 +115,334 @@
             "PO730934": "Les Républicains",
             "PO730940": "Gauche démocrate et républicaine",
             "PO730946": "Nouvelle Gauche",
-            "PO730952": "Les Constructifs",
+            "PO730952": "Les Constructifs (UDI)",
             "PO730958": "La France insoumise",
             "PO730964": "La République en Marche",
             "PO730970": "Mouvement Démocrate",
-            "PO744425": "UDI, Agir et Indépendants",
+            "PO744425": "UDI et Indépendants",
             "PO758835": "Socialistes et apparentés",
             "PO759900": "Libertés et Territoires",
             "PO765636": "UDI et Indépendants",
-            "PO767217": "UDI, Agir et Indépendants",
+            "PO767217": "UDI et Indépendants",
             "PO771789": "Écologie Démocratie Solidarité",
             "PO771889": "UDI et Indépendants",
             "PO771923": "Agir ensemble",
             "PO774834": "Mouvement Démocrate (MoDem)"
         };
 
+        // Ordre d'affichage de la Gauche vers la Droite dans l'Hémicycle
+        const ORDRE_HEMICYCLE = [
+            { re: /insoumise/, o: 1, color: '#e11d48' },
+            { re: /gauche democrate/, o: 2, color: '#9f1239' },
+            { re: /ecologiste|ecologie/, o: 3, color: '#16a34a' },
+            { re: /socialiste|nouvelle gauche/, o: 4, color: '#ec4899' },
+            { re: /libertes|liot|territoires/, o: 5, color: '#d97706' },
+            { re: /democrate|modem/, o: 6, color: '#f59e0b' },
+            { re: /ensemble|renaissance|republique en marche/, o: 7, color: '#1d4ed8' },
+            { re: /horizons/, o: 8, color: '#0ea5e9' },
+            { re: /constructifs|udi|agir/, o: 9, color: '#38bdf8' },
+            { re: /droite republicaine|les republicains/, o: 10, color: '#1e3a8a' },
+            { re: /udr|union des droites/, o: 11, color: '#312e81' },
+            { re: /rassemblement national/, o: 12, color: '#334155' },
+            { re: /non inscrit/, o: 99, color: '#94a3b8' }
+        ];
+
+        // Normalisation sans accents et en minuscules
+        const normaliserTexte = str => (str || '').normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
         function getNomGroupe(nomBrut) {
             if (!nomBrut) return "Groupe inconnu";
             const matchPo = nomBrut.match(/(PO\d+)/);
             if (matchPo && MAPPING_GROUPES[matchPo[1]]) return MAPPING_GROUPES[matchPo[1]];
             if (MAPPING_GROUPES[nomBrut.trim()]) return MAPPING_GROUPES[nomBrut.trim()];
-            const net = nomBrut.replace(/Groupe\s*\([^)]+\)/g, '').trim();
+            let net = nomBrut.replace(/Groupe\s*\([^)]+\)/g, '').trim();
             return net.length > 0 ? net : nomBrut;
         }
 
-        const GROUPES_META = [
-            { re: /insoumise/,                                   c: '#e11d48', o: 1 },
-            { re: /gauche democrate et republicaine/,            c: '#9f1239', o: 2 },
-            { re: /ecologie democratie solidarite/,              c: '#4ade80', o: 3.5 },
-            { re: /ecologiste/,                                  c: '#16a34a', o: 3 },
-            { re: /socialiste|nouvelle gauche/,                  c: '#ec4899', o: 4 },
-            { re: /libertes, independants|libertes et territoires|liot/, c: '#d97706', o: 5 },
-            { re: /democrate/,                                   c: '#f59e0b', o: 6 },
-            { re: /ensemble pour la republique|renaissance|republique en marche/, c: '#1d4ed8', o: 7 },
-            { re: /horizons/,                                    c: '#0ea5e9', o: 8 },
-            { re: /constructifs/,                                c: '#64748b', o: 8.6 },
-            { re: /udi/,                                         c: '#38bdf8', o: 9 },
-            { re: /agir/,                                        c: '#7dd3fc', o: 9.5 },
-            { re: /droite republicaine|les republicains/,        c: '#1e3a8a', o: 10 },
-            { re: /\budr\b|union des droites/,                   c: '#312e81', o: 11 },
-            { re: /^a droite$/,                                  c: '#3730a3', o: 11.5 },
-            { re: /rassemblement national/,                      c: '#334155', o: 12 },
-            { re: /non inscrit/,                                 c: '#94a3b8', o: 99 }
-        ];
-        const cacheMeta = new Map();
-
-        function metaGroupe(nomComplet) {
-            if (cacheMeta.has(nomComplet)) return cacheMeta.get(nomComplet);
-            const n = norm(nomComplet).trim();
-            let meta = GROUPES_META.find(m => m.re.test(n));
-            if (!meta) {
-                meta = { c: '#94a3b8', o: 50 };
-            }
-            cacheMeta.set(nomComplet, meta);
-            return meta;
+        function getMetadonneesGroupe(nomComplet) {
+            const norm = normaliserTexte(nomComplet);
+            const trouve = ORDRE_HEMICYCLE.find(item => item.re.test(norm));
+            return trouve || { o: 50, color: '#64748b' };
         }
 
-        function lireTotaux(s) {
-            const rg = s.resultat_global || {};
-            let pour = nombre(rg.pour ?? rg.nombre_pour);
-            let contre = nombre(rg.contre ?? rg.nombre_contre);
-            let abst = nombre(rg.abstention ?? rg.abstentions ?? rg.nombre_abstentions);
-
-            if (pour === null || contre === null) {
-                if (!Array.isArray(s.votes_par_groupe) || s.votes_par_groupe.length === 0) return null;
-                pour = contre = abst = 0;
-                s.votes_par_groupe.forEach(g => {
-                    const d = g.detail || {};
-                    pour += nombre(d.pour) || 0;
-                    contre += nombre(d.contre) || 0;
-                    abst += nombre(d.abstention) || 0;
-                });
-            }
-            return { pour, contre, abst: abst || 0 };
-        }
-
-        function barreHtml(pour, contre, abst, classe = '') {
-            const total = pour + contre + abst;
-            if (total <= 0) return `<div class="bar ${classe}" aria-hidden="true"></div>`;
-            const w = n => (n / total * 100).toFixed(2);
-            return `<div class="bar ${classe}" aria-hidden="true">
-                <span class="seg-pour" style="width:${w(pour)}%"></span><span class="seg-contre" style="width:${w(contre)}%"></span><span class="seg-abst" style="width:${w(abst)}%"></span>
-            </div>`;
-        }
-
-        function scoreHtml(s) {
-            const t = lireTotaux(s);
-            if (!t) return '';
-            const ecart = Math.abs(t.pour - t.contre);
-            const resume = `${fmt(t.pour)} pour, ${fmt(t.contre)} contre, ${fmt(t.abst)} abstentions`;
-            return `
-                <div class="score" role="group" aria-label="Résultat : ${esc(resume)}">
-                    <div class="score__nums">
-                        <span class="score__n score__n--pour"><b>${fmt(t.pour)}</b> pour</span>
-                        <span class="score__n score__n--contre"><b>${fmt(t.contre)}</b> contre</span>
-                        <span class="score__n score__n--abst"><b>${fmt(t.abst)}</b> abst.</span>
-                    </div>
-                    ${barreHtml(t.pour, t.contre, t.abst, 'bar--big')}
-                    <p class="score__marge">Écart : ${fmt(ecart)} voix</p>
-                </div>`;
-        }
-
-        function groupesHtml(votesGroupes) {
-            if (!Array.isArray(votesGroupes) || votesGroupes.length === 0) {
-                return `<p class="bloc__vide">Détail par groupe non disponible.</p>`;
-            }
-
-            const lignes = votesGroupes.map(g => {
-                const nom = getNomGroupe(g.nom_groupe);
-                const d = g.detail || {};
-                return {
-                    nom,
-                    meta: metaGroupe(nom),
-                    pour: nombre(d.pour) || 0,
-                    contre: nombre(d.contre) || 0,
-                    abst: nombre(d.abstention) || 0
-                };
-            }).sort((a, b) => a.meta.o - b.meta.o);
-
-            const items = lignes.map(l => {
-                const total = l.pour + l.contre + l.abst;
-                let position = '<span class="position">—</span>';
-                if (total > 0) {
-                    const max = Math.max(l.pour, l.contre, l.abst);
-                    const [lib, cls, val] = max === l.pour ? ['Pour', 'pour', l.pour]
-                        : max === l.contre ? ['Contre', 'contre', l.contre]
-                        : ['Abst.', 'abst', l.abst];
-                    position = `<span class="position position--${cls}">${lib} ${Math.round(val / total * 100)} %</span>`;
-                }
-                const aria = `${l.nom} : ${l.pour} pour, ${l.contre} contre, ${l.abst} abstentions`;
-                return `
-                    <li class="groupe" role="img" aria-label="${esc(aria)}">
-                        <span class="nom-groupe" title="${esc(l.nom)}"><i style="--c:${esc(l.meta.c)}"></i>${esc(l.nom)}</span>
-                        ${barreHtml(l.pour, l.contre, l.abst)}
-                        ${position}
-                    </li>`;
-            }).join('');
-
-            return `
-                <ul class="legende" aria-hidden="true">
-                    <li><i class="seg-pour"></i>Pour</li>
-                    <li><i class="seg-contre"></i>Contre</li>
-                    <li><i class="seg-abst"></i>Abstention</li>
-                </ul>
-                <ul class="groupes">${items}</ul>`;
-        }
-
-        function extraireTexte(valeur) {
-            if (valeur === null || valeur === undefined || valeur === '') return '';
-            if (typeof valeur === 'string' || typeof valeur === 'number') return esc(valeur);
-            if (Array.isArray(valeur)) {
-                return valeur.map(item => typeof item === 'object' && item !== null
-                    ? Object.values(item).filter(Boolean).map(extraireTexte).join(' — ')
-                    : extraireTexte(item)).join('<br>');
-            }
-            if (typeof valeur === 'object') {
-                return Object.entries(valeur)
-                    .map(([k, v]) => `<strong>${esc(k.replace(/_/g, ' '))} :</strong> ${extraireTexte(v)}`)
-                    .join('<br>');
-            }
-            return '';
-        }
-
-        function formaterBlocRiche(contexteObj) {
-            const vide = `<span class="bloc__vide">Non disponible.</span>`;
-            if (!contexteObj) return { intentionsHtml: vide, critiqueHtml: vide, expertsHtml: vide };
-
-            const valeurs = Object.values(contexteObj);
-
-            const intentionsData = contexteObj.intentions_auteurs || contexteObj.mesures_cles || valeurs[0];
-            const intentionsHtml = Array.isArray(intentionsData)
-                ? intentionsData.map(i => `<div class="bloc__item">${typeof i === 'object' && i !== null
-                    ? Object.values(i).filter(Boolean).map(extraireTexte).join(' : ')
-                    : extraireTexte(i)}</div>`).join('')
-                : (extraireTexte(intentionsData) || vide);
-
-            const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || valeurs[1];
-            const critiqueHtml = extraireTexte(critiqueData) || vide;
-
-            const expertsData = contexteObj.avis_experts || valeurs[2];
-            const expertsHtml = extraireTexte(expertsData) || vide;
-
-            return { intentionsHtml: intentionsHtml || vide, critiqueHtml, expertsHtml };
-        }
-
-        const ONGLETS = [
-            ['vote', '📊', 'Groupes'],
-            ['essentiel', '📋', 'Mesures'],
-            ['debat', '⚖️', 'Débat'],
-            ['experts', '🔍', 'Fact-check']
-        ];
-
-        function carteHtml(scrutin) {
-            const id = ++cardSeq;
-            const decision = scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat';
-            const estAdopte = decision.toLowerCase().includes('adopté');
-            const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
-
-            const tabs = ONGLETS.map(([k, ic, lib]) => `
-                <button type="button" role="tab" id="tab-${id}-${k}" aria-controls="pane-${id}-${k}"
-                        aria-selected="${k === 'vote'}" data-tab="${k}">
-                    <span aria-hidden="true">${ic}</span><span>${lib}</span>
-                </button>`).join('');
-
-            return `
-            <article class="card" data-tab="vote">
-                <div class="card__head">
-                    <span class="tag">${esc(scrutin.theme_principal || 'Général')}</span>
-                    <div class="card__meta">
-                        <span class="date">${esc(scrutin.date || scrutin.dateScrutin || '')}</span>
-                        <span class="badge ${estAdopte ? 'badge--ok' : 'badge--ko'}">${esc(decision)}</span>
-                    </div>
-                </div>
-
-                <h3 class="card__title">${esc(scrutin.titre_vulgarise || 'Titre non disponible')}</h3>
-                <p class="card__official">📄 ${esc(scrutin.titre_officiel || scrutin.titre || 'Titre officiel non disponible')}</p>
-
-                ${scoreHtml(scrutin)}
-
-                <div class="tabs" role="tablist" aria-label="Sections du scrutin">${tabs}</div>
-
-                <div class="pane pane--vote" role="tabpanel" id="pane-${id}-vote" aria-labelledby="tab-${id}-vote">
-                    <h4 class="pane-title">Position de chaque groupe</h4>
-                    ${groupesHtml(scrutin.votes_par_groupe)}
-                </div>
-
-                <div class="analyses">
-                    <div class="pane pane--essentiel" role="tabpanel" id="pane-${id}-essentiel" aria-labelledby="tab-${id}-essentiel">
-                        <div class="bloc bloc--essentiel">
-                            <strong class="bloc__title">📋 Ce que change la loi</strong>
-                            ${blocs.intentionsHtml}
-                        </div>
-                    </div>
-                    <div class="pane pane--debat" role="tabpanel" id="pane-${id}-debat" aria-labelledby="tab-${id}-debat">
-                        <div class="bloc bloc--debat">
-                            <strong class="bloc__title">⚖️ Points de clivage &amp; débats</strong>
-                            ${blocs.critiqueHtml}
-                        </div>
-                    </div>
-                    <div class="pane pane--experts" role="tabpanel" id="pane-${id}-experts" aria-labelledby="tab-${id}-experts">
-                        <div class="bloc bloc--experts">
-                            <strong class="bloc__title">🔍 Fact-check &amp; experts</strong>
-                            ${blocs.expertsHtml}
-                        </div>
-                    </div>
-                </div>
-            </article>`;
-        }
-
-        function appliquerFiltres() {
-            const mots = norm(termeRecherche).split(/\s+/).filter(Boolean);
-            filtres = scrutinsData.filter(s =>
-                (themeActif === 'TOUS' || s.theme_principal === themeActif) &&
-                mots.every(m => s._idx.includes(m))
-            );
-
-            affiches = 0;
-            $container.innerHTML = '';
-
-            if (filtres.length === 0) {
-                $container.innerHTML = `<div class="etat">Aucun résultat trouvé. Essayez un autre mot-clé ou une autre thématique.</div>`;
-            } else {
-                afficherPage();
-            }
-            majCompteur();
-        }
-
-        function afficherPage() {
-            const tranche = filtres.slice(affiches, affiches + PAGE_SIZE);
-            $container.insertAdjacentHTML('beforeend', tranche.map(carteHtml).join(''));
-            affiches += tranche.length;
-            majCompteur();
-        }
-
-        function majCompteur() {
-            const total = filtres.length;
-            $compteur.textContent = total === 0
-                ? ''
-                : `${fmt(Math.min(affiches, total))} scrutin${affiches > 1 ? 's' : ''} affiché${affiches > 1 ? 's' : ''} sur ${fmt(total)}`;
-
-            const reste = total - affiches;
-            if (reste > 0) {
-                $plus.hidden = false;
-                $plus.textContent = `Afficher ${Math.min(PAGE_SIZE, reste)} scrutin${Math.min(PAGE_SIZE, reste) > 1 ? 's' : ''} de plus`;
-            } else {
-                $plus.hidden = true;
-            }
-        }
-
-        function initialiserFiltres() {
-            const themes = [...new Set(scrutinsData.map(s => s.theme_principal).filter(Boolean))];
-            $filters.replaceChildren();
-
-            const creer = (valeur, libelle) => {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'chip';
-                b.dataset.theme = valeur;
-                b.textContent = libelle;
-                b.setAttribute('aria-pressed', String(valeur === themeActif));
-                return b;
-            };
-
-            $filters.append(creer('TOUS', 'Tous'), ...themes.map(t => creer(t, t)));
-        }
-
-        $filters.addEventListener('click', e => {
-            const btn = e.target.closest('[data-theme]');
-            if (!btn) return;
-            themeActif = btn.dataset.theme;
-            $filters.querySelectorAll('[data-theme]').forEach(b =>
-                b.setAttribute('aria-pressed', String(b === btn)));
-            appliquerFiltres();
-        });
-
-        $container.addEventListener('click', e => {
-            const btn = e.target.closest('[data-tab]');
-            if (!btn) return;
-            const carte = btn.closest('.card');
-            if (!carte) return;
-            carte.dataset.tab = btn.dataset.tab;
-            carte.querySelectorAll('.tabs [data-tab]').forEach(b =>
-                b.setAttribute('aria-selected', String(b === btn)));
-        });
-
-        $plus.addEventListener('click', afficherPage);
-
-        let minuteur = null;
         function gererRecherche() {
-            $clear.hidden = $search.value === '';
-            clearTimeout(minuteur);
-            minuteur = setTimeout(() => {
-                termeRecherche = $search.value;
-                appliquerFiltres();
-            }, DEBOUNCE_MS);
+            termeRecherche = normaliserTexte(document.getElementById('searchInput').value.trim());
+            afficherScrutins();
         }
-        $search.addEventListener('input', gererRecherche);
-        $clear.addEventListener('click', () => {
-            $search.value = '';
-            $clear.hidden = true;
-            clearTimeout(minuteur);
-            termeRecherche = '';
-            appliquerFiltres();
-            $search.focus();
-        });
+        
+        // Fonction pour mélanger un tableau de façon aléatoire (Fisher-Yates)
+        function melangerTableau(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
 
         async function chargerDonnees() {
             try {
                 const response = await fetch('./data_processed/scrutins_enrichis.json');
                 if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 const data = await response.json();
-                if (!Array.isArray(data)) throw new Error('Format JSON inattendu');
-                scrutinsData = data;
-
-                scrutinsData.forEach(s => {
-                    s._idx = norm([
-                        s.titre_vulgarise, s.titre_officiel, s.titre, s.theme_principal,
-                        ...collecterTexte(s.contexte_et_objectif)
-                    ].filter(Boolean).join(' '));
-                });
+                
+                // Mélange aléatoire des scrutins au chargement
+                scrutinsData = melangerTableau(data);
 
                 initialiserFiltres();
-                appliquerFiltres();
+                afficherScrutins();
             } catch (error) {
-                console.error('Erreur chargement :', error);
-                $container.innerHTML = `
-                    <div class="etat etat--erreur">
-                        <strong>Impossible de charger le fichier JSON.</strong>
-                        Vérifiez que le serveur local est actif.
+                console.error("Erreur chargement :", error);
+                document.getElementById('scrutins-container').innerHTML = `
+                    <div class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
+                        <p class="text-xs font-bold text-rose-700">Impossible de charger le fichier JSON.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Vérifiez que le serveur local est actif.</p>
                     </div>`;
             }
+        }
+        function formaterBlocRiche(contexteObj) {
+            if (!contexteObj) return { intentionsHtml: '', critiqueHtml: '', expertsHtml: '' };
+
+            function extraireTexte(valeur) {
+                if (!valeur) return '';
+                if (typeof valeur === 'string' || typeof valeur === 'number') return valeur;
+                if (Array.isArray(valeur)) {
+                    return valeur.map(item => typeof item === 'object' ? Object.values(item).filter(Boolean).join(' — ') : item).join('<br>');
+                }
+                if (typeof valeur === 'object') {
+                    return Object.entries(valeur).map(([k, v]) => `<strong>${k.replace(/_/g, ' ')} :</strong> ${extraireTexte(v)}`).join('<br>');
+                }
+                return '';
+            }
+
+            const intentionsData = contexteObj.intentions_auteurs || contexteObj.mesures_cles || Object.values(contexteObj)[0];
+            let intentionsHtml = Array.isArray(intentionsData) 
+                ? intentionsData.map(i => `<div class="mb-1.5 text-xs text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
+                : `<div class="text-xs text-slate-700">${extraireTexte(intentionsData)}</div>`;
+
+            const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || Object.values(contexteObj)[1];
+            let critiqueHtml = `<div class="text-xs text-slate-700 space-y-1">${extraireTexte(critiqueData)}</div>`;
+
+            const expertsData = contexteObj.avis_experts || Object.values(contexteObj)[2];
+            let expertsHtml = `<div class="text-xs text-slate-700 space-y-1">${extraireTexte(expertsData)}</div>`;
+
+            return { intentionsHtml, critiqueHtml, expertsHtml };
+        }
+
+        function initialiserFiltres() {
+            const themes = ['TOUS', ...new Set(scrutinsData.map(s => s.theme_principal).filter(Boolean))];
+            const filterContainer = document.getElementById('theme-filters');
+            
+            filterContainer.innerHTML = themes.map(t => {
+                const tSec = t.replace(/'/g, "\\'");
+                const active = t === themeActif;
+                const cls = active 
+                    ? "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition" 
+                    : "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
+                return `<button onclick="filtrerTheme('${tSec}')" class="${cls}">${t}</button>`;
+            }).join('');
+        }
+
+        function filtrerTheme(theme) {
+            themeActif = theme;
+            document.querySelectorAll('.btn-theme').forEach(btn => {
+                const txt = btn.innerText.trim();
+                if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
+                    btn.className = "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition";
+                } else {
+                    btn.className = "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
+                }
+            });
+            afficherScrutins();
+        }
+
+        function switcherSousOnglet(cardIdx, sectionName) {
+            const sections = ['vote', 'essentiel', 'debat', 'experts'];
+            sections.forEach(sec => {
+                const el = document.getElementById(`card-${cardIdx}-${sec}`);
+                const btn = document.getElementById(`btn-${cardIdx}-${sec}`);
+                if (el && btn) {
+                    if (sec === sectionName) {
+                        el.classList.remove('hidden');
+                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition";
+                    } else {
+                        el.classList.add('hidden');
+                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition";
+                    }
+                }
+            });
+        }
+
+        function genererBarresHorizontales(votesGroupes) {
+            if (!Array.isArray(votesGroupes) || votesGroupes.length === 0) {
+                return '<p class="text-xs text-slate-400 italic py-2">Détail par groupe indisponible.</p>';
+            }
+
+            // Normalisation, ajout des métadonnées et tri de Gauche à Droite
+            const groupesTries = votesGroupes.map(g => {
+                const nom = getNomGroupe(g.nom_groupe);
+                const meta = getMetadonneesGroupe(nom);
+                const p = Number(g.detail?.pour || 0);
+                const c = Number(g.detail?.contre || 0);
+                const a = Number(g.detail?.abstention || 0);
+                return { nom, meta, pour: p, contre: c, abstention: a, total: p + c + a };
+            }).sort((a, b) => a.meta.o - b.meta.o);
+
+            return `
+                <div class="space-y-2.5 pt-1">
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium pb-1 border-b border-slate-100">
+                        <span class="flex items-center gap-3">
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Pour</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Contre</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Abstention</span>
+                        </span>
+                        <span>Position majoritaire</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        ${groupesTries.map(g => {
+                            if (g.total === 0) return '';
+                            const pctPour = ((g.pour / g.total) * 100).toFixed(1);
+                            const pctContre = ((g.contre / g.total) * 100).toFixed(1);
+                            const pctAbst = ((g.abstention / g.total) * 100).toFixed(1);
+
+                            let majTexte = "Abstention";
+                            let majColor = "text-slate-500";
+                            if (g.pour >= g.contre && g.pour >= g.abstention) {
+                                majTexte = `Pour (${Math.round(pctPour)}%)`;
+                                majColor = "text-emerald-600";
+                            } else if (g.contre >= g.pour && g.contre >= g.abstention) {
+                                majTexte = `Contre (${Math.round(pctContre)}%)`;
+                                majColor = "text-rose-600";
+                            }
+
+                            return `
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="font-medium text-slate-800 truncate pr-2 flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${g.meta.color}"></span>
+                                            ${g.nom}
+                                        </span>
+                                        <span class="font-bold text-[11px] ${majColor} flex-shrink-0">${majTexte}</span>
+                                    </div>
+                                    <div class="barre-progression">
+                                        <span class="bg-pour" style="width: ${pctPour}%" title="Pour: ${g.pour}"></span>
+                                        <span class="bg-contre" style="width: ${pctContre}%" title="Contre: ${g.contre}"></span>
+                                        <span class="bg-abstention" style="width: ${pctAbst}%" title="Abstention: ${g.abstention}"></span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function afficherScrutins() {
+            const container = document.getElementById('scrutins-container');
+            if (!container) return;
+
+            let filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
+
+            // Recherche insensible aux accents
+            if (termeRecherche) {
+                filtrés = filtrés.filter(s => {
+                    const tv = normaliserTexte(s.titre_vulgarise);
+                    const to = normaliserTexte(s.titre_officiel || s.titre);
+                    const th = normaliserTexte(s.theme_principal);
+                    const ctx = normaliserTexte(JSON.stringify(s.contexte_et_objectif || ''));
+                    return tv.includes(termeRecherche) || to.includes(termeRecherche) || th.includes(termeRecherche) || ctx.includes(termeRecherche);
+                });
+            }
+
+            if (filtrés.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4">
+                        <p class="text-slate-400 text-xs">Aucun résultat trouvé.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtrés.map((scrutin, idx) => {
+                const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
+                const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+                const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
+
+                return `
+                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-2xs">
+                    
+                    <!-- Header Carte -->
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                            ${scrutin.theme_principal || 'Général'}
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
+                                ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Titre -->
+                    <div class="mb-4">
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-1">
+                            ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
+                        </h3>
+                        <p class="text-[11px] text-slate-400 italic line-clamp-2">
+                            📄 ${scrutin.titre_officiel || 'Titre officiel non disponible'}
+                        </p>
+                    </div>
+
+                    <!-- Onglets mobiles -->
+                    <div class="flex md:hidden bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
+                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
+                        <button id="btn-${idx}-essentiel" onclick="switcherSousOnglet(${idx}, 'essentiel')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">📋 Mesures</button>
+                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
+                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
+                    </div>
+
+                    <!-- Contenu -->
+                    <div class="space-y-4">
+                        
+                        <!-- 1. Barres Horizontales des votes -->
+                        <div id="card-${idx}-vote" class="block space-y-2">
+                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:block mb-2">Ventilation du vote par groupe</h4>
+                            ${genererBarresHorizontales(scrutin.votes_par_groupe)}
+                        </div>
+
+                        <!-- Grille Desktop des 3 blocs d'analyse -->
+                        <div class="grid md:grid-cols-3 gap-3">
+                            <div id="card-${idx}-essentiel" class="block space-y-3 pt-1">
+                                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 h-full">
+                                    <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">📋 Ce que change la loi</strong>
+                                    ${blocs.intentionsHtml}
+                                </div>
+                            </div>
+
+                            <div id="card-${idx}-debat" class="hidden md:block space-y-3 pt-1">
+                                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
+                                    <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
+                                    ${blocs.critiqueHtml}
+                                </div>
+                            </div>
+
+                            <div id="card-${idx}-experts" class="hidden md:block pt-1">
+                                <div class="bg-purple-50/60 p-3 rounded-xl border border-purple-200 h-full">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[10px] font-bold text-purple-950 uppercase tracking-wider">🔍 Fact-check & Experts</span>
+                                    </div>
+                                    <div class="text-slate-700 text-xs leading-relaxed space-y-1">
+                                        ${blocs.expertsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </article>`;
+            }).join('');
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
