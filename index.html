@@ -67,79 +67,73 @@
         let themeActif = 'TOUS';
         let termeRecherche = '';
 
-        // Dictionnaire de correspondance pour remplacer les identifiants de groupes par de vrais noms
-        // Dictionnaire enrichi pour mapper les identifiants et codes "PO..." de l'Assemblée nationale
+        // Dictionnaire de correspondance complet pour toutes les législatures (17e, 16e, 15e)
         const MAPPING_GROUPES = {
             // --- 17e Législature ---
             "PO840056": "Non inscrit",
             "PO845401": "Rassemblement National",
             "PO845407": "Ensemble pour la République",
-            "PO845413": "La France insoumise - Nouveau Front Populaire",
+            "PO845413": "La France insoumise - NFP",
             "PO845419": "Socialistes et apparentés",
             "PO845425": "Droite Républicaine",
             "PO845439": "Écologiste et Social",
             "PO845454": "Les Démocrates",
             "PO845470": "Horizons & Indépendants",
-            "PO845485": "Libertés, Indépendants, Outre-mer et Territoires",
+            "PO845485": "LIOT",
             "PO845514": "Gauche Démocrate et Républicaine",
             "PO845520": "À Droite",
             "PO847173": "UDR",
             "PO872880": "Union des droites pour la République",
             
-            // --- 16e Législature (exemples courants) ---
+            // --- 16e Législature ---
             "PO793087": "Non inscrit",
-            "PO800484": "Démocrate (MoDem et Indépendants)",
-            "PO800490": "La France insoumise - Nouvelle Union Populaire écologique et sociale",
-            "PO800496": "Socialistes et apparentés (membre de l'intergroupe NUPES)",
-            "PO800502": "Gauche démocrate et républicaine - NUPES",
+            "PO800484": "Démocrate (MoDem)",
+            "PO800490": "La France insoumise (NUPES)",
+            "PO800496": "Socialistes et apparentés",
+            "PO800502": "Gauche démocrate et républicaine",
             "PO800508": "Les Républicains",
             "PO800514": "Horizons et apparentés",
             "PO800520": "Rassemblement National",
-            "PO800526": "Écologiste - NUPES",
-            "PO800532": "Libertés, Indépendants, Outre-mer et Territoires",
+            "PO800526": "Écologiste",
+            "PO800532": "LIOT",
             "PO800538": "Renaissance",
             "PO830170": "Socialistes et apparentés",
             
-            // --- 15e Législature (Complément) ---
-    
+            // --- 15e Législature ---
             "PO723569": "Non inscrit",
             "PO730934": "Les Républicains",
             "PO730940": "Gauche démocrate et républicaine",
             "PO730946": "Nouvelle Gauche",
-            "PO730952": "Les Constructifs : républicains, UDI, indépendants",
+            "PO730952": "Les Constructifs (UDI)",
             "PO730958": "La France insoumise",
             "PO730964": "La République en Marche",
-            "PO730970": "Mouvement Démocrate et apparentés",
-            "PO744425": "UDI, Agir et Indépendants",
+            "PO730970": "Mouvement Démocrate",
+            "PO744425": "UDI et Indépendants",
             "PO758835": "Socialistes et apparentés",
             "PO759900": "Libertés et Territoires",
             "PO765636": "UDI et Indépendants",
-            "PO767217": "UDI, Agir et Indépendants",
+            "PO767217": "UDI et Indépendants",
             "PO771789": "Écologie Démocratie Solidarité",
             "PO771889": "UDI et Indépendants",
             "PO771923": "Agir ensemble",
-            "PO774834": "Mouvement Démocrate (MoDem) et Démocrates apparentés",
-
-            
-            
+            "PO774834": "Mouvement Démocrate (MoDem)"
         };
 
         function getNomGroupe(nomBrut) {
             if (!nomBrut) return "Groupe inconnu";
             
-            // 1. Si on trouve un code PO... dedans
+            // 1. Recherche d'un code PO... dans la chaîne
             const matchPo = nomBrut.match(/(PO\d+)/);
             if (matchPo && MAPPING_GROUPES[matchPo[1]]) {
                 return MAPPING_GROUPES[matchPo[1]];
             }
             
-            // 2. Si le nom brut correspond à une clé directe
+            // 2. Correspondance directe
             if (MAPPING_GROUPES[nomBrut.trim()]) {
                 return MAPPING_GROUPES[nomBrut.trim()];
             }
             
-            // 3. Secours automatique intelligent : si c'est un texte du genre "Groupe (PO123456)", 
-            // on extrait proprement ce qu'il y a avant ou on enlève la partie technique moche.
+            // 3. Nettoyage de secours automatique
             let net = nomBrut.replace(/Groupe\s*\([^)]+\)/g, '').trim();
             return net.length > 0 ? net : nomBrut;
         }
@@ -203,7 +197,7 @@
                 const tSec = t.replace(/'/g, "\\'");
                 const active = t === themeActif;
                 const cls = active 
-                    ? "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition" 
+                    ? "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition shadow-2xs" 
                     : "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
                 return `<button onclick="filtrerTheme('${tSec}')" class="${cls}">${t}</button>`;
             }).join('');
@@ -214,7 +208,7 @@
             document.querySelectorAll('.btn-theme').forEach(btn => {
                 const txt = btn.innerText.trim();
                 if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
-                    btn.className = "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition";
+                    btn.className = "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition shadow-2xs";
                 } else {
                     btn.className = "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
                 }
@@ -284,11 +278,10 @@
                         </div>
                     </div>
 
-                    <!-- Titre -->
                     <!-- Titre vulgarisé mis en valeur et titre officiel en sous-titre discret -->
                     <div class="mb-4">
                         <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-1">
-                            ${scrutin.titre_vulgarise || 'Titre non disponible'}
+                            ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
                         </h3>
                         <p class="text-[11px] text-slate-400 italic line-clamp-2">
                             📄 ${scrutin.titre_officiel || 'Titre officiel non disponible'}
@@ -357,7 +350,6 @@
 
         function rendreGraphique(canvasId, votesGroupes) {
             const ctx = document.getElementById(canvasId).getContext('2d');
-            // Traduction automatique des identifiants par leurs libellés officiels
             const labels = votesGroupes.map(g => getNomGroupe(g.nom_groupe));
             const dataPour = votesGroupes.map(g => g.detail.pour);
             const dataContre = votesGroupes.map(g => g.detail.contre);
