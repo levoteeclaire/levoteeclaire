@@ -3,206 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regard Citoyen - Les votes de l'Assemblée nationale</title>
+    <title>Le Vote Éclairé - Les votes de l'Assemblée nationale</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
-    <!-- En-tête sobre et pédagogique -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">🏛️</span>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Regard Citoyen</h1>
-                    <p class="text-xs text-slate-500">Décrypter les votes de l'Assemblée nationale en toute simplicité</p>
-                </div>
+    <!-- En-tête sobre et ultra-compact -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-2xs">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🏛️</span>
+                <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
             </div>
-            <!-- Navigation par Onglets -->
-            <nav class="flex gap-2 bg-slate-100 p-1 rounded-xl">
-                <button onclick="changerOnglet('observatoire')" id="tab-observatoire" class="px-4 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-xs transition">
-                    📂 L'Observatoire
-                </button>
-                <button onclick="changerOnglet('boussole')" id="tab-boussole" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">
-                    🧭 Boussole Citoyenne
-                </button>
-            </nav>
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
+                Direct Assemblée
+            </span>
         </div>
     </header>
 
     <!-- Contenu Principal -->
-    <main class="max-w-5xl mx-auto px-6 py-8 flex-grow w-full">
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4">
         
-        <!-- ONGLET 1 : OBSERVATOIRE -->
-        <div id="vue-observatoire" class="space-y-8">
-            <!-- Barre de recherche textuelle -->
-            <div class="mb-6">
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">🔍</span>
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        oninput="gererRecherche()" 
-                        placeholder="Rechercher par mot-clé (ex: agriculture, transport, budget, hôpital...)" 
-                        class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-2xs transition"
-                    >
-                </div>
+        <!-- Zone de Filtres & Recherche -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    oninput="gererRecherche()" 
+                    placeholder="Rechercher un sujet, un mot-clé..." 
+                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                >
             </div>
 
-            <!-- Barre de Filtres thématiques -->
-            <section class="mb-8">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
-                    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filtrer par thématique</h2>
-                    <span class="text-[11px] text-slate-400 italic">
-                        * Typologie de classement inspirée des baromètres de référence des préoccupations des Français (ex: Ifop / Ipsos).
-                    </span>
-                </div>
-                <div id="theme-filters" class="flex flex-wrap gap-2">
-                    <button onclick="filtrerTheme('TOUS')" class="btn-theme bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm transition hover:bg-indigo-700">Tous les scrutins</button>
-                </div>
-            </section>
-
-            <!-- Liste des Scrutins (Cartes aérées) -->
-            <section id="scrutins-container" class="space-y-6">
-                <div class="text-center py-16 text-slate-400 text-sm">Chargement des données en cours...</div>
-            </section>
+            <div id="theme-filters" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <button onclick="filtrerTheme('TOUS')" class="btn-theme whitespace-nowrap bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition">Tous</button>
+            </div>
         </div>
 
-        <!-- ONGLET 2 : BOUSSOLE CITOYENNE -->
-        <div id="vue-boussole" class="hidden space-y-6">
-            <section class="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-xs">
-                <div class="max-w-2xl mb-8">
-                    <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md">Mode Interactif</span>
-                    <h2 class="text-2xl font-bold text-slate-900 mt-2 mb-2">🧭 Votre boussole politique</h2>
-                    <p class="text-sm text-slate-600 leading-relaxed">Positionnez-vous sur ces textes clés de l'Assemblée nationale. À la fin, l'outil calculera instantanément quel groupe politique a voté le plus souvent en accord avec vos choix.</p>
-                </div>
-
-                <div id="quiz-container" class="space-y-6">
-                    <!-- Injecté par JS -->
-                </div>
-                
-                <div id="quiz-results" class="hidden mt-8 p-6 bg-indigo-50/70 rounded-2xl border border-indigo-100">
-                    <!-- Résultats du quiz -->
-                </div>
-            </section>
-        </div>
+        <!-- Conteneur des cartes de scrutins -->
+        <section id="scrutins-container" class="space-y-4">
+            <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
+        </section>
 
     </main>
 
     <!-- Pied de page -->
-    <footer class="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-        <p>Données officielles en Open Data de l'Assemblée nationale • Traitement pédagogique par IA</p>
+    <footer class="border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
+        <p>Données officielles en Open Data • Traitement pédagogique neutre par IA</p>
     </footer>
 
-    <!-- Script JavaScript -->
+    <!-- JavaScript -->
     <script>
         let scrutinsData = [];
         let themeActif = 'TOUS';
-        let termeRecherche = ''; // <-- Déclaré ici proprement pour éviter l'erreur
-        let userChoices = {};
+        let termeRecherche = '';
 
         function gererRecherche() {
-            const input = document.getElementById('searchInput');
-            termeRecherche = input.value.toLowerCase().trim();
+            termeRecherche = document.getElementById('searchInput').value.toLowerCase().trim();
             afficherScrutins();
         }
 
         async function chargerDonnees() {
             try {
                 const response = await fetch('./data_processed/scrutins_enrichis.json');
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 scrutinsData = await response.json();
                 initialiserFiltres();
                 afficherScrutins();
-                lancerBoussole();
             } catch (error) {
-                console.error("Erreur de chargement du JSON :", error);
+                console.error("Erreur chargement :", error);
                 document.getElementById('scrutins-container').innerHTML = `
-                    <div class="text-center py-16 bg-white rounded-2xl border border-rose-200 p-8 max-w-lg mx-auto">
-                        <span class="text-3xl mb-3 block">⚠️</span>
-                        <h3 class="text-base font-bold text-rose-700 mb-2">Impossible de charger les données</h3>
-                        <p class="text-xs text-slate-600 mb-4 leading-relaxed">
-                            Le fichier <code class="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-600">scrutins_enrichis.json</code> est introuvable ou bloqué par le navigateur (sécurité CORS).
-                        </p>
-                        <div class="bg-slate-50 p-4 rounded-xl text-left text-xs text-slate-700 border border-slate-200 space-y-2">
-                            <p class="font-bold text-slate-900">Astuce :</p>
-                            <p>Lancez un serveur local dans votre terminal avec : <br><code class="text-indigo-600 font-mono">python -m http.server</code></p>
-                        </div>
+                    <div class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
+                        <p class="text-xs font-bold text-rose-700">Impossible de charger le fichier JSON.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Vérifiez que le serveur local est actif.</p>
                     </div>`;
             }
         }
 
-        // Gestion des onglets
-        function changerOnglet(onglet) {
-            const obs = document.getElementById('vue-observatoire');
-            const bou = document.getElementById('vue-boussole');
-            const btnObs = document.getElementById('tab-observatoire');
-            const btnBou = document.getElementById('tab-boussole');
-
-            if (onglet === 'observatoire') {
-                obs.classList.remove('hidden');
-                bou.classList.add('hidden');
-                btnObs.className = "px-4 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-xs transition";
-                btnBou.className = "px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition";
-            } else {
-                obs.classList.add('hidden');
-                bou.classList.remove('hidden');
-                btnBou.className = "px-4 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-xs transition";
-                btnObs.className = "px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition";
-            }
-        }
-
-        // Sécurité de secours pour formater les textes simples
-        function formaterTexteBloc(champ) {
-            if (!champ) return "";
-            if (typeof champ === 'object') {
-                return Object.values(champ).join(' ');
-            }
-            return champ;
-        }
-
-        // Formateur intelligent pour la structure riche
         function formaterBlocRiche(contexteObj) {
             if (!contexteObj) return { intentionsHtml: '', critiqueHtml: '', expertsHtml: '' };
 
             function extraireTexte(valeur) {
                 if (!valeur) return '';
-                if (typeof valeur === 'string' || typeof valeur === 'number') {
-                    return valeur;
-                }
+                if (typeof valeur === 'string' || typeof valeur === 'number') return valeur;
                 if (Array.isArray(valeur)) {
-                    return valeur.map(item => {
-                        if (typeof item === 'object' && item !== null) {
-                            return Object.values(item).map(v => extraireTexte(v)).filter(Boolean).join(' — ');
-                        }
-                        return item;
-                    }).join('<br>');
+                    return valeur.map(item => typeof item === 'object' ? Object.values(item).filter(Boolean).join(' — ') : item).join('<br>');
                 }
                 if (typeof valeur === 'object') {
-                    return Object.entries(valeur).map(([sousClé, sousVal]) => {
-                        const libelleClé = sousClé.replace(/_/g, ' ');
-                        const contenuSousVal = extraireTexte(sousVal);
-                        return `<strong>${libelleClé} :</strong> ${contenuSousVal}`;
-                    }).join('<br>');
+                    return Object.entries(valeur).map(([k, v]) => `<strong>${k.replace(/_/g, ' ')} :</strong> ${extraireTexte(v)}`).join('<br>');
                 }
                 return '';
             }
 
             const intentionsData = contexteObj.intentions_auteurs || contexteObj.mesures_cles || Object.values(contexteObj)[0];
-            let intentionsHtml = '';
-            if (Array.isArray(intentionsData)) {
-                intentionsHtml = intentionsData.map(item => {
-                    const texteItem = typeof item === 'object' ? Object.values(item).filter(Boolean).join(' : ') : item;
-                    return `<div class="mb-2 text-xs text-slate-700">🔹 ${texteItem}</div>`;
-                }).join('');
-            } else {
-                intentionsHtml = `<div class="text-xs text-slate-700">${extraireTexte(intentionsData)}</div>`;
-            }
+            let intentionsHtml = Array.isArray(intentionsData) 
+                ? intentionsData.map(i => `<div class="mb-1.5 text-xs text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
+                : `<div class="text-xs text-slate-700">${extraireTexte(intentionsData)}</div>`;
 
             const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || Object.values(contexteObj)[1];
             let critiqueHtml = `<div class="text-xs text-slate-700 space-y-1">${extraireTexte(critiqueData)}</div>`;
@@ -218,143 +123,156 @@
             const filterContainer = document.getElementById('theme-filters');
             
             filterContainer.innerHTML = themes.map(t => {
-                const themeSecurise = t.replace(/'/g, "\\'");
-                const estActif = t === themeActif;
-                const classeBtn = estActif 
-                    ? "btn-theme bg-indigo-600 text-white px-3.5 py-1.5 rounded-full text-xs font-medium shadow-xs transition" 
-                    : "btn-theme bg-slate-100 text-slate-600 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition";
-
-                return `<button onclick="filtrerTheme('${themeSecurise}')" class="${classeBtn}">${t}</button>`;
+                const tSec = t.replace(/'/g, "\\'");
+                const active = t === themeActif;
+                const cls = active 
+                    ? "btn-theme whitespace-nowrap bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition" 
+                    : "btn-theme whitespace-nowrap bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
+                return `<button onclick="filtrerTheme('${tSec}')" class="${cls}">${t}</button>`;
             }).join('');
         }
 
         function filtrerTheme(theme) {
             themeActif = theme;
             document.querySelectorAll('.btn-theme').forEach(btn => {
-                const texteBtn = btn.innerText.trim();
-                if (texteBtn === theme || (theme === 'TOUS' && texteBtn.includes('Tous'))) {
-                    btn.className = "btn-theme bg-indigo-600 text-white px-3.5 py-1.5 rounded-full text-xs font-medium shadow-xs transition";
+                const txt = btn.innerText.trim();
+                if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
+                    btn.className = "btn-theme whitespace-nowrap bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition";
                 } else {
-                    btn.className = "btn-theme bg-slate-100 text-slate-600 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition";
+                    btn.className = "btn-theme whitespace-nowrap bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
                 }
             });
             afficherScrutins();
+        }
+
+        function switcherSousOnglet(cardIdx, sectionName) {
+            const sections = ['vote', 'essentiel', 'debat', 'experts'];
+            sections.forEach(sec => {
+                const el = document.getElementById(`card-${cardIdx}-${sec}`);
+                const btn = document.getElementById(`btn-${cardIdx}-${sec}`);
+                if (el && btn) {
+                    if (sec === sectionName) {
+                        el.classList.remove('hidden');
+                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition";
+                    } else {
+                        el.classList.add('hidden');
+                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition";
+                    }
+                }
+            });
         }
 
         function afficherScrutins() {
             const container = document.getElementById('scrutins-container');
             if (!container) return;
 
-            try {
-                let filtrés = themeActif === 'TOUS' 
-                    ? scrutinsData 
-                    : scrutinsData.filter(s => s.theme_principal === themeActif);
+            let filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
 
-                if (termeRecherche) {
-                    filtrés = filtrés.filter(scrutin => {
-                        const titreVulg = (scrutin.titre_vulgarise || '').toLowerCase();
-                        const titreOff = (scrutin.titre_officiel || scrutin.titre || '').toLowerCase();
-                        const theme = (scrutin.theme_principal || '').toLowerCase();
-                        
-                        let texteContenu = '';
-                        if (scrutin.contexte_et_objectif) {
-                            texteContenu = JSON.stringify(scrutin.contexte_et_objectif).toLowerCase();
-                        }
+            if (termeRecherche) {
+                filtrés = filtrés.filter(s => {
+                    const tv = (s.titre_vulgarise || '').toLowerCase();
+                    const to = (s.titre_officiel || s.titre || '').toLowerCase();
+                    const th = (s.theme_principal || '').toLowerCase();
+                    const ctx = s.contexte_et_objectif ? JSON.stringify(s.contexte_et_objectif).toLowerCase() : '';
+                    return tv.includes(termeRecherche) || to.includes(termeRecherche) || th.includes(termeRecherche) || ctx.includes(termeRecherche);
+                });
+            }
 
-                        return titreVulg.includes(termeRecherche) || 
-                               titreOff.includes(termeRecherche) || 
-                               theme.includes(termeRecherche) || 
-                               texteContenu.includes(termeRecherche);
-                    });
-                }
+            if (filtrés.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4">
+                        <p class="text-slate-400 text-xs">Aucun résultat trouvé.</p>
+                    </div>`;
+                return;
+            }
 
-                if (filtrés.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-16 bg-white rounded-2xl border border-slate-200">
-                            <p class="text-slate-400 text-sm mb-1">Aucun scrutin ne correspond à votre recherche.</p>
-                            <button onclick="document.getElementById('searchInput').value=''; termeRecherche=''; filtrerTheme('TOUS');" class="mt-3 text-xs text-indigo-600 font-semibold hover:underline">Réinitialiser les filtres</button>
-                        </div>`;
-                    return;
-                }
+            container.innerHTML = filtrés.map((scrutin, idx) => {
+                const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
+                const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+                const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
 
-                container.innerHTML = filtrés.map((scrutin, idx) => {
-                    const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
-                    const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+                return `
+                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-2xs">
                     
-                    const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
-
-                    return `
-                    <article class="bg-white border border-slate-200/80 rounded-2xl p-7 shadow-xs hover:shadow-md transition">
-                        <!-- En-tête de carte -->
-                        <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
-                            <span class="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-lg">
-                                ${scrutin.theme_principal || 'Général'}
+                    <!-- Header Carte -->
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                            ${scrutin.theme_principal || 'Général'}
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
+                                ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
                             </span>
-                            <div class="flex items-center gap-3">
-                                <span class="text-xs text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
-                                <span class="text-xs font-bold px-3 py-1 rounded-full border ${badgeColor}">
-                                    ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
-                                </span>
-                            </div>
                         </div>
+                    </div>
 
-                        <!-- Titres -->
-                        <h3 class="text-xl font-bold text-slate-900 mb-1 leading-snug">${scrutin.titre_vulgarise || 'Titre non disponible'}</h3>
-                        <p class="text-xs text-slate-400 italic mb-6 line-clamp-2">${scrutin.titre_officiel || scrutin.titre || ''}</p>
+                    <!-- Titre -->
+                    <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-3">
+                        ${scrutin.titre_vulgarise || 'Titre non disponible'}
+                    </h3>
 
-                        <!-- Grille repensée -->
-                        <div class="space-y-4 mb-8 text-sm">
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div class="bg-slate-50/70 p-5 rounded-xl border border-slate-100 border-l-4 border-l-blue-500">
-                                    <strong class="block text-[11px] font-bold text-blue-900 uppercase tracking-wider mb-2">📋 Mesures & Dispositions</strong>
-                                    ${blocs.intentionsHtml}
-                                </div>
-                                <div class="bg-slate-50/70 p-5 rounded-xl border border-slate-100 border-l-4 border-l-amber-500">
-                                    <strong class="block text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-2">⚖️ Points de clivage</strong>
-                                    ${blocs.critiqueHtml}
-                                </div>
-                            </div>
-                            <div class="bg-purple-50/60 p-6 rounded-2xl border-2 border-purple-200/80 shadow-xs relative overflow-hidden">
-                                <div class="absolute top-0 left-0 w-1.5 h-full bg-purple-600"></div>
-                                <div class="flex items-center gap-2 mb-3">
-                                    <span class="text-lg">🔍</span>
-                                    <h4 class="text-xs font-bold text-purple-950 uppercase tracking-wider">Fact-check & Avis d'experts</h4>
-                                    <span class="text-[10px] font-medium px-2 py-0.5 bg-purple-200/70 text-purple-800 rounded-full ml-auto">Évaluation indépendante</span>
-                                </div>
-                                <div class="text-slate-700 text-xs sm:text-sm leading-relaxed space-y-2">
-                                    ${blocs.expertsHtml}
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Onglets mobiles (masqués sur desktop où tout s'affiche en clair) -->
+                    <div class="flex md:hidden bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
+                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
+                        <button id="btn-${idx}-essentiel" onclick="switcherSousOnglet(${idx}, 'essentiel')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">📋 Mesures</button>
+                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
+                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
+                    </div>
 
-                        <!-- Graphique -->
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ventilation du vote par groupe politique</h4>
-                            <div class="h-60 relative">
+                    <!-- Contenu : Sur Desktop (md:) tout est visible simultanément en grille -->
+                    <div class="space-y-4">
+                        
+                        <!-- 1. Graphique / Vote -->
+                        <div id="card-${idx}-vote" class="block space-y-2">
+                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:block mb-2">Ventilation du vote</h4>
+                            <div class="h-48 sm:h-56 relative pt-1">
                                 <canvas id="chart-${idx}"></canvas>
                             </div>
                         </div>
-                    </article>`;
-                }).join('');
 
-                filtrés.forEach((scrutin, idx) => {
-                    if (scrutin.votes_par_groupe) {
-                        try {
-                            rendreGraphique(`chart-${idx}`, scrutin.votes_par_groupe);
-                        } catch (errChart) {
-                            console.error("Erreur graphique chart-" + idx, errChart);
-                        }
-                    }
-                });
+                        <!-- Grille Desktop des 3 blocs d'analyse textuelle -->
+                        <div class="grid md:grid-cols-3 gap-3">
+                            <!-- Mesures -->
+                            <div id="card-${idx}-essentiel" class="block space-y-3 pt-1">
+                                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 h-full">
+                                    <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">📋 Ce que change la loi</strong>
+                                    ${blocs.intentionsHtml}
+                                </div>
+                            </div>
 
-            } catch (err) {
-                console.error("Erreur critique dans afficherScrutins :", err);
-                container.innerHTML = `
-                    <div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs">
-                        <p class="font-bold mb-1">Erreur d'affichage des cartes :</p>
-                        <p>${err.message}</p>
-                    </div>`;
-            }
+                            <!-- Points de clivage / Avis critiques (Opposition) -->
+                            <div id="card-${idx}-debat" class="hidden md:block space-y-3 pt-1">
+                                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
+                                    <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
+                                    ${blocs.critiqueHtml}
+                                </div>
+                            </div>
+
+                            <!-- Fact-check & Experts -->
+                            <div id="card-${idx}-experts" class="hidden md:block pt-1">
+                                <div class="bg-purple-50/60 p-3 rounded-xl border border-purple-200 h-full">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[10px] font-bold text-purple-950 uppercase tracking-wider">🔍 Fact-check & Experts</span>
+                                    </div>
+                                    <div class="text-slate-700 text-xs leading-relaxed space-y-1">
+                                        ${blocs.expertsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </article>`;
+            }).join('');
+
+            // Rendu des graphiques
+            filtrés.forEach((scrutin, idx) => {
+                if (scrutin.votes_par_groupe) {
+                    rendreGraphique(`chart-${idx}`, scrutin.votes_par_groupe);
+                }
+            });
         }
 
         function rendreGraphique(canvasId, votesGroupes) {
@@ -369,111 +287,23 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Pour', data: dataPour, backgroundColor: '#10b981', borderRadius: 4 },
-                        { label: 'Contre', data: dataContre, backgroundColor: '#f43f5e', borderRadius: 4 },
-                        { label: 'Abstention', data: dataAbstention, backgroundColor: '#cbd5e1', borderRadius: 4 }
+                        { label: 'Pour', data: dataPour, backgroundColor: '#10b981', borderRadius: 3 },
+                        { label: 'Contre', data: dataContre, backgroundColor: '#f43f5e', borderRadius: 3 },
+                        { label: 'Abstention', data: dataAbstention, backgroundColor: '#cbd5e1', borderRadius: 3 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { stacked: true, grid: { display: false } },
-                        y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' } }
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } }
                     },
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
+                        legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }
                     }
                 }
             });
-        }
-
-        // Logique de la Boussole
-        function lancerBoussole() {
-            const container = document.getElementById('quiz-container');
-            
-            function obtenirScrutinsAleatoires(arr, n) {
-                const melange = [...arr].sort(() => 0.5 - Math.random());
-                return melange.slice(0, n);
-            }
-
-            const scrutinsQuiz = obtenirScrutinsAleatoires(scrutinsData, 4);
-            if (scrutinsQuiz.length === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-sm">Chargement du quiz...</p>`;
-                return;
-            }
-
-            container.innerHTML = scrutinsQuiz.map((scrutin, idx) => `
-                <div class="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                    <span class="text-xs font-semibold px-2.5 py-1 bg-white text-indigo-700 rounded-md border border-indigo-100">${scrutin.theme_principal}</span>
-                    <h3 class="text-md font-bold text-slate-800 mt-3 mb-2">${scrutin.titre_vulgarise}</h3>
-                    <p class="text-xs text-slate-500 mb-4">Vote clé issu de l'Assemblée nationale.</p>
-                    
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="enregistrerChoix(${idx}, 'pour')" class="btn-choix-${idx} px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition shadow-2xs">👍 J'aurais voté Pour</button>
-                        <button onclick="enregistrerChoix(${idx}, 'contre')" class="btn-choix-${idx} px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 transition shadow-2xs">👎 J'aurais voté Contre</button>
-                        <button onclick="enregistrerChoix(${idx}, 'abstention')" class="btn-choix-${idx} px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition shadow-2xs">🤝 Abstention</button>
-                    </div>
-                </div>
-            `).join('') + `
-                <button onclick="calculerAffinites()" class="w-full mt-4 bg-indigo-600 text-white font-medium px-6 py-3 rounded-xl text-sm hover:bg-indigo-700 transition shadow-sm">
-                    Calculer mes affinités politiques 🎯
-                </button>
-            `;
-        }
-
-        function enregistrerChoix(scrutinIdx, choix) {
-            userChoices[scrutinIdx] = choix;
-            const boutons = document.querySelectorAll(`.btn-choix-${scrutinIdx}`);
-            boutons.forEach(b => b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600'));
-            event.target.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
-        }
-
-        function calculerAffinites() {
-            const scrutinsQuiz = scrutinsData.slice(0, 4);
-            let scoresGroupes = {};
-
-            scrutinsQuiz.forEach((scrutin, idx) => {
-                const choixUser = userChoices[idx];
-                if (!choixUser) return;
-
-                if (scrutin.positions_groupes) {
-                    for (let [groupe, positionVote] of Object.entries(scrutin.positions_groupes)) {
-                        if (!scoresGroupes[groupe]) scoresGroupes[groupe] = { match: 0, total: 0 };
-                        scoresGroupes[groupe].total += 1;
-                        if (positionVote === choixUser) {
-                            scoresGroupes[groupe].match += 1;
-                        }
-                    }
-                }
-            });
-
-            let resultats = Object.keys(scoresGroupes).map(groupe => {
-                let stats = scoresGroupes[groupe];
-                let pourcentage = stats.total > 0 ? Math.round((stats.match / stats.total) * 100) : 0;
-                return { groupe, pourcentage };
-            });
-
-            resultats.sort((a, b) => b.pourcentage - a.pourcentage);
-
-            const resContainer = document.getElementById('quiz-results');
-            resContainer.classList.remove('hidden');
-            resContainer.innerHTML = `
-                <h3 class="text-base font-bold text-indigo-900 mb-4">📊 Vos résultats de proximité politique :</h3>
-                <div class="space-y-3">
-                    ${resultats.map(r => `
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-                                <span>${r.groupe}</span>
-                                <span>${r.pourcentage}% de concordance</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: ${r.pourcentage}%"></div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
