@@ -21,7 +21,6 @@
         }
         *:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; }
         input[type=search]::-webkit-search-cancel-button { display: none; }
-        #theme-filters::-webkit-scrollbar { display: none; }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
         /* Confort de lecture : onglets Débat et Fact-check */
         .lecture { font-size: .9375rem; line-height: 1.55; color: #1e293b; overflow-wrap: break-word; }
@@ -36,6 +35,12 @@
         .lecture li > .bloc-lecture + .bloc-lecture { margin-top: .4rem; padding-top: .4rem; }
         .lecture.replie { max-height: 10.5rem; overflow: hidden; position: relative; }
         .lecture.replie::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3rem; background: linear-gradient(to bottom, transparent, var(--fond, #fff)); pointer-events: none; }
+        .ico { width: 1.25rem; height: 1.25rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        body:has(dialog[open]) { overflow: hidden; }
+        @keyframes monter { from { transform: translateY(100%); } to { transform: none; } }
+        @keyframes apparaitre { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: none; } }
+        dialog.feuille[open] { animation: monter .22s ease-out; }
+        @media (min-width: 640px) { dialog.feuille[open] { animation: apparaitre .15s ease-out; } }
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
@@ -74,26 +79,23 @@
                 <button type="button" id="btn-effacer" hidden onclick="effacerRecherche()" aria-label="Effacer la recherche" class="absolute right-0 top-0 h-full w-11 text-slate-600">✕</button>
             </div>
 
-            <!-- Filtres thématiques (défilement horizontal sur mobile) -->
-            <div>
-                <span class="block text-xs font-semibold text-slate-600 mb-2">Thématiques</span>
-                <div id="theme-filters" role="group" aria-label="Filtrer par thématique" class="flex flex-wrap gap-2">
-                    <button type="button" data-theme="TOUS" aria-pressed="true" onclick="filtrerTheme('TOUS')" class="btn-theme shrink-0 min-h-[44px] bg-indigo-700 text-white px-4 rounded-full text-sm font-medium transition">Tous</button>
-                </div>
+            <!-- Filtres : thématique + tri (ouvrent une feuille) -->
+            <div class="flex items-center gap-2">
+                <button type="button" id="btn-theme" onclick="ouvrirFiltres()" aria-haspopup="dialog" class="flex-1 min-w-0 min-h-[48px] flex items-center gap-2.5 pl-3.5 pr-3 rounded-xl border border-slate-300 bg-white text-slate-800 text-left text-base transition hover:bg-slate-50">
+                    <svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h9M16 6h1M3 14h1M8 14h9"/><circle cx="14" cy="6" r="2"/><circle cx="6" cy="14" r="2"/></svg>
+                    <span id="btn-theme-label" class="flex-1 truncate">Toutes les thématiques</span>
+                    <svg class="ico text-slate-600" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+                </button>
+                <button type="button" id="btn-effacer-theme" hidden onclick="filtrerTheme('TOUS')" aria-label="Retirer le filtre thématique" class="w-12 h-12 shrink-0 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 transition">
+                    <svg class="ico mx-auto" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                </button>
+                <button type="button" id="btn-tri" onclick="ouvrirFiltres()" aria-haspopup="dialog" aria-label="Trier les scrutins" class="relative w-12 h-12 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition">
+                    <svg class="ico mx-auto" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4v12M7 16l-3-3M7 16l3-3M13 16V4M13 4l-3 3M13 4l3 3"/></svg>
+                    <span id="point-tri" hidden class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-white"></span>
+                </button>
             </div>
 
-            <!-- Compteur et tri -->
-            <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                <p id="compteur" role="status" class="text-sm font-semibold text-slate-700"></p>
-                <div class="flex items-center gap-2">
-                    <label for="tri" class="text-sm text-slate-600">Trier</label>
-                    <select id="tri" onchange="changerTri()" class="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-base px-2 text-slate-800">
-                        <option value="alea">Par défaut</option>
-                        <option value="recent">Plus récents</option>
-                        <option value="ancien">Plus anciens</option>
-                    </select>
-                </div>
-            </div>
+            <p id="compteur" role="status" class="text-sm font-semibold text-slate-700"></p>
         </div>
 
         <!-- Bandeau : vue d'un scrutin partagé -->
@@ -211,6 +213,28 @@
     </footer>
 
 <button type="button" id="btn-haut" hidden onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed bottom-4 right-4 z-40 min-h-[48px] px-4 rounded-full bg-indigo-700 text-white text-sm font-semibold shadow-lg">↑ Filtres</button>
+<dialog id="feuille-filtres" aria-labelledby="titre-feuille" class="feuille m-0 mt-auto w-full max-w-none max-h-[85vh] p-0 border-0 rounded-t-3xl bg-white text-slate-800 shadow-2xl open:flex open:flex-col sm:m-auto sm:max-w-md sm:rounded-3xl backdrop:bg-slate-900/50">
+        <div class="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-slate-300 sm:hidden" aria-hidden="true"></div>
+        <div class="flex items-center justify-between pl-5 pr-3 pt-3 pb-1">
+            <h2 id="titre-feuille" class="text-lg font-bold text-slate-900">Filtrer et trier</h2>
+            <div class="flex items-center">
+                <button type="button" id="btn-reinit" hidden onclick="reinitialiserSelection()" class="min-h-[44px] px-3 text-sm font-semibold text-indigo-700">Réinitialiser</button>
+                <button type="button" onclick="fermerFiltres()" aria-label="Fermer" class="w-11 h-11 rounded-full text-slate-700 hover:bg-slate-100 transition">
+                    <svg class="ico mx-auto" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="overflow-y-auto px-3 pb-6 pt-1 space-y-6">
+            <section>
+                <h3 class="px-2 mb-1.5 text-sm font-semibold text-slate-600">Thématique</h3>
+                <div id="liste-themes" role="group" aria-label="Thématique" class="space-y-0.5"></div>
+            </section>
+            <section>
+                <h3 class="px-2 mb-1.5 text-sm font-semibold text-slate-600">Trier par</h3>
+                <div id="liste-tri" role="group" aria-label="Tri" class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl"></div>
+            </section>
+        </div>
+    </dialog>
     <div id="toast" role="status" hidden class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-full"></div>
 
     <!-- JavaScript -->
@@ -222,9 +246,6 @@
         let limiteAffichage = 10; // Nombre de cartes affichées par défaut
         let scrutinUnique = null; // id d'un scrutin partagé (lien ?s=...)
         let tri = 'alea';
-
-        const CLS_CHIP_ON = "btn-theme shrink-0 min-h-[44px] bg-indigo-700 text-white px-4 rounded-full text-sm font-medium transition";
-        const CLS_CHIP_OFF = "btn-theme shrink-0 min-h-[44px] bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 px-4 rounded-full text-sm font-medium transition";
         const CLS_TAB_ON = "flex-1 min-h-[44px] px-1 text-center text-sm font-bold text-indigo-700 bg-white rounded-lg shadow-sm transition";
         const CLS_TAB_OFF = "flex-1 min-h-[44px] px-1 text-center text-sm font-medium text-slate-600 hover:text-slate-800 transition";
         const SQUELETTE = Array(3).fill(`<div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 animate-pulse" aria-hidden="true"><div class="h-4 bg-slate-200 rounded w-1/3"></div><div class="h-5 bg-slate-200 rounded w-5/6"></div><div class="h-20 bg-slate-100 rounded-xl"></div></div>`).join('') + '<p role="status" class="sr-only">Chargement des scrutins…</p>';
@@ -340,8 +361,8 @@
             champ.focus();
         }
 
-        function changerTri() {
-            tri = document.getElementById('tri').value;
+        function changerTri(valeur) {
+            tri = valeur;
             limiteAffichage = 10;
             scrutinUnique = null;
             mettreAJourFiltresEtAffichage();
@@ -359,7 +380,7 @@
             scrutinUnique = null;
             document.getElementById('searchInput').value = '';
             document.getElementById('btn-effacer').hidden = true;
-            document.getElementById('tri').value = 'alea';
+            
             filtrerTheme('TOUS');
         }
 
@@ -422,7 +443,7 @@
                 termeRecherche = normaliserTexte(q.trim());
                 document.getElementById('btn-effacer').hidden = false;
             }
-            document.getElementById('tri').value = tri;
+            
         }
 
         function melangerTableau(array) {
@@ -512,23 +533,70 @@
             return { intentionsHtml, critiqueHtml, expertsHtml };
         }
 
+        let comptesThemes = {};
+        const OPTIONS_TRI = [['alea', 'Par défaut'], ['recent', 'Récents'], ['ancien', 'Anciens']];
+        const ICO_CHECK = '<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10l4 4 8-8"/></svg>';
+
         function initialiserFiltres() {
-            const themes = ['TOUS', ...new Set(scrutinsData.map(x => x.theme_principal).filter(Boolean))];
-            document.getElementById('theme-filters').innerHTML = themes.map(t => {
-                const actif = t === themeActif;
-                return `<button type="button" data-theme="${esc(t)}" aria-pressed="${actif}" onclick="filtrerTheme(this.dataset.theme)" class="${actif ? CLS_CHIP_ON : CLS_CHIP_OFF}">${t === 'TOUS' ? 'Tous' : esc(t)}</button>`;
-            }).join('');
+            comptesThemes = {};
+            scrutinsData.forEach(x => { if (x.theme_principal) comptesThemes[x.theme_principal] = (comptesThemes[x.theme_principal] || 0) + 1; });
+        }
+
+        // « Santé / Protection sociale » : domaine en gras, sous-thème en retrait
+        function libelleTheme(t) {
+            const [a, ...r] = t.split(' / ');
+            return r.length ? `<span class="font-semibold">${esc(a)}</span><span class="text-slate-600"> · ${esc(r.join(' / '))}</span>` : esc(t);
+        }
+
+        function rendreFeuille() {
+            const ligne = (val, html, n) => {
+                const sel = themeActif === val;
+                return `<button type="button" aria-pressed="${sel}" data-theme="${esc(val)}" onclick="filtrerTheme(this.dataset.theme); fermerFiltres()" class="w-full min-h-[48px] flex items-center gap-3 px-3 py-2 rounded-xl text-left text-base transition ${sel ? 'bg-indigo-50 text-indigo-900' : 'text-slate-800 hover:bg-slate-50'}">
+                    <span class="flex-1">${html}</span>
+                    <span class="text-sm tabular-nums ${sel ? 'text-indigo-800' : 'text-slate-600'}">${n}</span>
+                    ${sel ? ICO_CHECK : '<span class="w-5 shrink-0"></span>'}
+                </button>`;
+            };
+            const themes = Object.keys(comptesThemes).sort((a, b) => a.localeCompare(b, 'fr'));
+            document.getElementById('liste-themes').innerHTML =
+                ligne('TOUS', 'Toutes les thématiques', scrutinsData.length) + themes.map(t => ligne(t, libelleTheme(t), comptesThemes[t])).join('');
+            document.getElementById('liste-tri').innerHTML = OPTIONS_TRI.map(([v, l]) =>
+                `<button type="button" aria-pressed="${tri === v}" onclick="changerTri('${v}'); fermerFiltres()" class="min-h-[44px] rounded-lg text-sm transition ${tri === v ? 'bg-white font-bold text-indigo-700 shadow-sm' : 'font-medium text-slate-700'}">${l}</button>`).join('');
+            document.getElementById('btn-reinit').hidden = themeActif === 'TOUS' && tri === 'alea';
+        }
+
+        // Met à jour les boutons de la barre de filtres selon l'état courant
+        function majFiltresUI() {
+            const actif = themeActif !== 'TOUS';
+            const b = document.getElementById('btn-theme');
+            document.getElementById('btn-theme-label').textContent = actif ? themeActif.replace(/ \/ /g, ' · ') : 'Toutes les thématiques';
+            ['bg-indigo-50', 'border-indigo-500', 'text-indigo-900', 'font-semibold'].forEach(c => b.classList.toggle(c, actif));
+            ['bg-white', 'border-slate-300', 'text-slate-800'].forEach(c => b.classList.toggle(c, !actif));
+            document.getElementById('btn-effacer-theme').hidden = !actif;
+            document.getElementById('point-tri').hidden = tri === 'alea';
+        }
+
+        function ouvrirFiltres() {
+            const d = document.getElementById('feuille-filtres');
+            rendreFeuille();
+            if (!d.open) d.showModal();
+        }
+
+        function fermerFiltres() {
+            const d = document.getElementById('feuille-filtres');
+            if (d.open) d.close();
+        }
+
+        function reinitialiserSelection() {
+            tri = 'alea';
+            filtrerTheme('TOUS');
+            fermerFiltres();
         }
 
         function filtrerTheme(theme) {
             themeActif = theme;
             limiteAffichage = 10; // Réinitialise la limite à 10 lors d'un changement de filtre
             scrutinUnique = null;
-            document.querySelectorAll('.btn-theme').forEach(btn => {
-                const actif = btn.dataset.theme === theme;
-                btn.className = actif ? CLS_CHIP_ON : CLS_CHIP_OFF;
-                btn.setAttribute('aria-pressed', actif);
-            });
             mettreAJourFiltresEtAffichage();
         }
 
@@ -644,6 +712,7 @@
 
             document.getElementById('bandeau-unique').hidden = !scrutinUnique;
             synchroniserURL();
+            majFiltresUI();
             afficherScrutins(0);
         }
 
@@ -790,6 +859,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
+        document.getElementById('feuille-filtres').addEventListener('click', e => { if (e.target === e.currentTarget) fermerFiltres(); });
         window.addEventListener('scroll', () => {
             document.getElementById('btn-haut').hidden = window.scrollY < 600;
         }, { passive: true });
