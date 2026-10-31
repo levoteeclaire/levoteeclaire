@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Vote Éclairé - Les votes de l'Assemblée nationale</title>
+    <link rel="preload" href="./data_processed/scrutins_enrichis.json" as="fetch" crossorigin="anonymous">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .barre-progression {
             display: flex;
-            height: 6px;
+            height: 8px;
             border-radius: 9999px;
             overflow: hidden;
             background-color: #f1f5f9;
@@ -18,6 +19,10 @@
             height: 100%;
             transition: width 0.3s ease;
         }
+        *:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; }
+        input[type=search]::-webkit-search-cancel-button { display: none; }
+        #theme-filters::-webkit-scrollbar { display: none; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
@@ -29,12 +34,10 @@
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-2xs">
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <span class="text-xl">🏛️</span>
-                <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
+                <span class="text-xl" aria-hidden="true">🏛️</span>
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
             </div>
-            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
-                Direct Assemblée
-            </span>
+            <a href="#methode" onclick="ouvrirMethode(event)" class="inline-flex items-center min-h-[44px] px-3 text-sm font-semibold text-indigo-700 hover:underline">Méthode</a>
         </div>
     </header>
 
@@ -44,42 +47,110 @@
         <!-- Zone de Filtres & Recherche -->
         <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    oninput="gererRecherche()" 
-                    placeholder="Rechercher un sujet, un mot-clé (ex: écologie, budget)..." 
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                <label for="searchInput" class="sr-only">Rechercher un scrutin</label>
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-sm" aria-hidden="true">🔍</span>
+                <input
+                    type="search"
+                    enterkeyhint="search"
+                    autocomplete="off"
+                    id="searchInput"
+                    oninput="gererRecherche()"
+                    placeholder="Rechercher : écologie, budget…"
+                    class="w-full pl-10 pr-11 min-h-[48px] bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
                 >
+                <button type="button" id="btn-effacer" hidden onclick="effacerRecherche()" aria-label="Effacer la recherche" class="absolute right-0 top-0 h-full w-11 text-slate-600">✕</button>
             </div>
 
-            <!-- Filtres thématiques -->
+            <!-- Filtres thématiques (défilement horizontal sur mobile) -->
             <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Thématiques</span>
-                <div id="theme-filters" class="flex flex-wrap gap-1.5">
-                    <button onclick="filtrerTheme('TOUS')" class="btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition">Tous</button>
+                <span class="block text-xs font-semibold text-slate-600 mb-2">Thématiques</span>
+                <div id="theme-filters" role="group" aria-label="Filtrer par thématique" class="flex gap-2 overflow-x-auto sm:flex-wrap -mx-3.5 px-3.5 sm:mx-0 sm:px-0 pb-1 [scrollbar-width:none]">
+                    <button type="button" data-theme="TOUS" aria-pressed="true" onclick="filtrerTheme('TOUS')" class="btn-theme shrink-0 min-h-[44px] bg-indigo-700 text-white px-4 rounded-full text-sm font-medium transition">Tous</button>
+                </div>
+            </div>
+
+            <!-- Compteur et tri -->
+            <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <p id="compteur" role="status" class="text-sm font-semibold text-slate-700"></p>
+                <div class="flex items-center gap-2">
+                    <label for="tri" class="text-sm text-slate-600">Trier</label>
+                    <select id="tri" onchange="changerTri()" class="min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-base px-2 text-slate-800">
+                        <option value="alea">Par défaut</option>
+                        <option value="recent">Plus récents</option>
+                        <option value="ancien">Plus anciens</option>
+                    </select>
                 </div>
             </div>
         </div>
 
+        <!-- Bandeau : vue d'un scrutin partagé -->
+        <div id="bandeau-unique" hidden class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-900">
+            Vous consultez un scrutin partagé.
+            <button type="button" onclick="voirTous()" class="min-h-[44px] font-semibold underline">Voir tous les scrutins</button>
+        </div>
+
         <!-- Conteneur des cartes de scrutins -->
-        <section id="scrutins-container" class="space-y-4">
-            <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
+        <section aria-labelledby="titre-liste">
+            <h2 id="titre-liste" class="sr-only">Liste des scrutins</h2>
+            <div id="scrutins-container" class="space-y-4">
+                <p role="status" class="text-center py-12 text-slate-600 text-sm">Chargement des scrutins…</p>
+            </div>
         </section>
+
+        <!-- Bouton "Voir plus" -->
+        <div id="pagination-container" class="text-center py-4 hidden">
+            <button type="button" onclick="chargerPlus()" class="bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 font-semibold text-sm px-6 min-h-[48px] rounded-xl shadow-2xs transition">
+                Voir plus de scrutins
+            </button>
+        </div>
+
+        <!-- Méthode et lexique -->
+        <details id="methode" class="bg-white rounded-2xl border border-slate-200 p-4 scroll-mt-20">
+            <summary class="cursor-pointer py-2 text-base font-bold text-slate-900">Méthode et lexique</summary>
+            <div class="mt-2 space-y-3 text-sm text-slate-700 leading-relaxed">
+                <p><strong>Origine des contenus.</strong> Les résultats des votes viennent des données ouvertes de l'Assemblée nationale. Les titres simplifiés, les objets du vote, les débats et les fact-checks sont produits avec l'aide d'une IA : ils peuvent comporter des erreurs. Chaque carte renvoie vers la source officielle pour vérifier.</p>
+                <p><strong>Ordre d'affichage.</strong> Par défaut, l'ordre est aléatoire et change à chaque visite (par pertinence lors d'une recherche) : aucun sujet n'est mis en avant. Utilisez « Trier » pour classer par date.</p>
+                <p><strong>Lire les résultats.</strong> Les chiffres sont des nombres de députés. Le point coloré devant un groupe indique sa famille politique, les groupes étant classés de la gauche vers la droite de l'hémicycle.</p>
+                <ul class="space-y-1">
+                    <li><strong>RN</strong> : Rassemblement national</li>
+                    <li><strong>EPR</strong> : Ensemble pour la République</li>
+                    <li><strong>LFI - NFP</strong> : La France insoumise - Nouveau Front populaire</li>
+                    <li><strong>Socialistes</strong> : Socialistes et apparentés</li>
+                    <li><strong>Écologiste</strong> : Écologiste et social</li>
+                    <li><strong>GDR</strong> : Gauche démocrate et républicaine</li>
+                    <li><strong>LIOT</strong> : Libertés, indépendants, outre-mer et territoires</li>
+                    <li><strong>UDR</strong> : Union des droites pour la République</li>
+                    <li><strong>Horizons</strong> : Horizons et indépendants</li>
+                    <li><strong>Non inscrit</strong> : députés n'appartenant à aucun groupe</li>
+                </ul>
+            </div>
+        </details>
 
     </main>
 
     <!-- Pied de page -->
-    <footer class="border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
+    <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-600 px-4">
         <p>Données officielles en Open Data • Traitement pédagogique neutre par IA</p>
     </footer>
+
+<button type="button" id="btn-haut" hidden onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed bottom-4 right-4 z-40 min-h-[48px] px-4 rounded-full bg-indigo-700 text-white text-sm font-semibold shadow-lg">↑ Filtres</button>
+    <div id="toast" role="status" hidden class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-full"></div>
 
     <!-- JavaScript -->
     <script>
         let scrutinsData = [];
         let themeActif = 'TOUS';
         let termeRecherche = '';
+        let scrutinsFiltresActuels = [];
+        let limiteAffichage = 10; // Nombre de cartes affichées par défaut
+        let scrutinUnique = null; // id d'un scrutin partagé (lien ?s=...)
+        let tri = 'alea';
+
+        const CLS_CHIP_ON = "btn-theme shrink-0 min-h-[44px] bg-indigo-700 text-white px-4 rounded-full text-sm font-medium transition";
+        const CLS_CHIP_OFF = "btn-theme shrink-0 min-h-[44px] bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 px-4 rounded-full text-sm font-medium transition";
+        const CLS_TAB_ON = "flex-1 min-h-[44px] px-1 text-center text-sm font-bold text-indigo-700 bg-white rounded-lg shadow-sm transition";
+        const CLS_TAB_OFF = "flex-1 min-h-[44px] px-1 text-center text-sm font-medium text-slate-600 hover:text-slate-800 transition";
+        const SQUELETTE = Array(3).fill(`<div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 animate-pulse" aria-hidden="true"><div class="h-4 bg-slate-200 rounded w-1/3"></div><div class="h-5 bg-slate-200 rounded w-5/6"></div><div class="h-20 bg-slate-100 rounded-xl"></div></div>`).join('') + '<p role="status" class="sr-only">Chargement des scrutins…</p>';
 
         // Mapping complet des groupes parlementaires
         const MAPPING_GROUPES = {
@@ -163,9 +234,118 @@
             return trouve || { o: 50, color: '#64748b' };
         }
 
+        const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        function formaterDate(brut) {
+            if (!brut) return '';
+            const d = new Date(brut);
+            if (isNaN(d)) return brut;
+            return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        }
+
+        let minuteurRecherche;
         function gererRecherche() {
-            termeRecherche = normaliserTexte(document.getElementById('searchInput').value.trim());
-            afficherScrutins();
+            const champ = document.getElementById('searchInput');
+            document.getElementById('btn-effacer').hidden = !champ.value;
+            clearTimeout(minuteurRecherche);
+            minuteurRecherche = setTimeout(() => {
+                termeRecherche = normaliserTexte(champ.value.trim());
+                limiteAffichage = 10; // Réinitialise la limite à 10 lors d'une recherche
+                scrutinUnique = null;
+                mettreAJourFiltresEtAffichage();
+            }, 200);
+        }
+
+        function effacerRecherche() {
+            const champ = document.getElementById('searchInput');
+            champ.value = '';
+            gererRecherche();
+            champ.focus();
+        }
+
+        function changerTri() {
+            tri = document.getElementById('tri').value;
+            limiteAffichage = 10;
+            scrutinUnique = null;
+            mettreAJourFiltresEtAffichage();
+        }
+
+        function voirTous() {
+            scrutinUnique = null;
+            limiteAffichage = 10;
+            mettreAJourFiltresEtAffichage();
+        }
+
+        function reinitialiserFiltres() {
+            termeRecherche = '';
+            tri = 'alea';
+            scrutinUnique = null;
+            document.getElementById('searchInput').value = '';
+            document.getElementById('btn-effacer').hidden = true;
+            document.getElementById('tri').value = 'alea';
+            filtrerTheme('TOUS');
+        }
+
+        function ouvrirMethode(e) {
+            e.preventDefault();
+            const d = document.getElementById('methode');
+            d.open = true;
+            d.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        let minuteurToast;
+        function afficherToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.hidden = false;
+            clearTimeout(minuteurToast);
+            minuteurToast = setTimeout(() => { t.hidden = true; }, 2500);
+        }
+
+        async function partager(idx) {
+            const sc = scrutinsFiltresActuels[idx];
+            if (!sc) return;
+            const titre = sc.titre_vulgarise || sc.titre || 'Scrutin à l\'Assemblée nationale';
+            const url = location.origin + location.pathname + '?s=' + encodeURIComponent(sc._id);
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title: titre, text: titre, url });
+                } else {
+                    await navigator.clipboard.writeText(url);
+                    afficherToast('Lien copié');
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') afficherToast(url);
+            }
+        }
+
+        function synchroniserURL() {
+            const p = new URLSearchParams();
+            if (scrutinUnique) {
+                p.set('s', scrutinUnique);
+            } else {
+                const q = document.getElementById('searchInput').value.trim();
+                if (q) p.set('q', q);
+                if (themeActif !== 'TOUS') p.set('theme', themeActif);
+                if (tri !== 'alea') p.set('tri', tri);
+            }
+            const qs = p.toString();
+            try { history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '')); } catch (e) { /* ignoré */ }
+        }
+
+        function restaurerDepuisURL() {
+            const p = new URLSearchParams(location.search);
+            scrutinUnique = p.get('s');
+            const th = p.get('theme');
+            if (th && scrutinsData.some(x => x.theme_principal === th)) themeActif = th;
+            if (['recent', 'ancien'].includes(p.get('tri'))) tri = p.get('tri');
+            const q = p.get('q');
+            if (q) {
+                document.getElementById('searchInput').value = q;
+                termeRecherche = normaliserTexte(q.trim());
+                document.getElementById('btn-effacer').hidden = false;
+            }
+            document.getElementById('tri').value = tri;
         }
 
         function melangerTableau(array) {
@@ -177,19 +357,31 @@
         }
 
         async function chargerDonnees() {
+            const conteneur = document.getElementById('scrutins-container');
+            conteneur.innerHTML = SQUELETTE;
             try {
                 const response = await fetch('./data_processed/scrutins_enrichis.json');
                 if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 const data = await response.json();
+                // Index de recherche calculé une seule fois + identifiant stable pour le partage
+                data.forEach((x, i) => {
+                    x._id = String(x.id ?? x.uid ?? x.numero ?? i);
+                    x._tv = normaliserTexte(x.titre_vulgarise);
+                    x._to = normaliserTexte(x.titre_officiel || x.titre);
+                    x._th = normaliserTexte(x.theme_principal);
+                    x._ctx = normaliserTexte(JSON.stringify(x.contexte_et_objectif || ''));
+                });
                 scrutinsData = melangerTableau(data);
+                restaurerDepuisURL();
                 initialiserFiltres();
-                afficherScrutins();
+                mettreAJourFiltresEtAffichage();
             } catch (error) {
                 console.error("Erreur chargement :", error);
-                document.getElementById('scrutins-container').innerHTML = `
-                    <div class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
-                        <p class="text-xs font-bold text-rose-700">Impossible de charger le fichier JSON.</p>
-                        <p class="text-[11px] text-slate-500 mt-1">Vérifiez que le serveur local est actif.</p>
+                conteneur.innerHTML = `
+                    <div role="alert" class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
+                        <p class="text-base font-bold text-rose-800">Les scrutins n'ont pas pu être chargés.</p>
+                        <p class="text-sm text-slate-600 mt-1">Vérifiez votre connexion, puis réessayez.</p>
+                        <button type="button" onclick="chargerDonnees()" class="mt-4 min-h-[44px] px-6 rounded-xl bg-indigo-700 text-white text-sm font-semibold">Réessayer</button>
                     </div>`;
             }
         }
@@ -204,261 +396,280 @@
                     return valeur.map(item => typeof item === 'object' ? Object.values(item).filter(Boolean).join(' — ') : item).join('<br>');
                 }
                 if (typeof valeur === 'object') {
-                    return Object.entries(valeur).map(([k, v]) => `<strong>${k.replace(/_/g, ' ')} :</strong> ${extraireTexte(v)}`).join('<br>');
+                    return Object.entries(valeur).map(([k, v]) => `<strong>${k.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())} :</strong> ${extraireTexte(v)}`).join('<br>');
                 }
                 return '';
             }
 
             const intentionsData = contexteObj.intentions_auteurs || contexteObj.mesures_cles || Object.values(contexteObj)[0];
             let intentionsHtml = Array.isArray(intentionsData) 
-                ? intentionsData.map(i => `<div class="mb-1 text-xs text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
-                : `<div class="text-xs text-slate-700">${extraireTexte(intentionsData)}</div>`;
+                ? intentionsData.map(i => `<div class="mb-1 text-sm text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
+                : `<div class="text-sm text-slate-700">${extraireTexte(intentionsData)}</div>`;
 
             const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || Object.values(contexteObj)[1];
-            let critiqueHtml = `<div class="text-xs text-slate-700 space-y-1">${extraireTexte(critiqueData)}</div>`;
+            let critiqueHtml = `<div class="text-sm text-slate-700 space-y-1">${extraireTexte(critiqueData)}</div>`;
 
             const expertsData = contexteObj.avis_experts || Object.values(contexteObj)[2];
-            let expertsHtml = `<div class="text-xs text-slate-700 space-y-1">${extraireTexte(expertsData)}</div>`;
+            let expertsHtml = `<div class="text-sm text-slate-700 space-y-1">${extraireTexte(expertsData)}</div>`;
 
             return { intentionsHtml, critiqueHtml, expertsHtml };
         }
 
         function initialiserFiltres() {
-            const themes = ['TOUS', ...new Set(scrutinsData.map(s => s.theme_principal).filter(Boolean))];
-            const filterContainer = document.getElementById('theme-filters');
-            
-            filterContainer.innerHTML = themes.map(t => {
-                const tSec = t.replace(/'/g, "\\'");
-                const active = t === themeActif;
-                const cls = active 
-                    ? "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition" 
-                    : "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
-                return `<button onclick="filtrerTheme('${tSec}')" class="${cls}">${t}</button>`;
+            const themes = ['TOUS', ...new Set(scrutinsData.map(x => x.theme_principal).filter(Boolean))];
+            document.getElementById('theme-filters').innerHTML = themes.map(t => {
+                const actif = t === themeActif;
+                return `<button type="button" data-theme="${esc(t)}" aria-pressed="${actif}" onclick="filtrerTheme(this.dataset.theme)" class="${actif ? CLS_CHIP_ON : CLS_CHIP_OFF}">${t === 'TOUS' ? 'Tous' : esc(t)}</button>`;
             }).join('');
         }
 
         function filtrerTheme(theme) {
             themeActif = theme;
+            limiteAffichage = 10; // Réinitialise la limite à 10 lors d'un changement de filtre
+            scrutinUnique = null;
             document.querySelectorAll('.btn-theme').forEach(btn => {
-                const txt = btn.innerText.trim();
-                if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
-                    btn.className = "btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-2xs transition";
-                } else {
-                    btn.className = "btn-theme bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-medium transition";
-                }
+                const actif = btn.dataset.theme === theme;
+                btn.className = actif ? CLS_CHIP_ON : CLS_CHIP_OFF;
+                btn.setAttribute('aria-pressed', actif);
             });
-            afficherScrutins();
+            mettreAJourFiltresEtAffichage();
         }
 
         function switcherSousOnglet(cardIdx, sectionName) {
-            const sections = ['vote', 'debat', 'experts'];
-            sections.forEach(sec => {
+            ['vote', 'debat', 'experts'].forEach(sec => {
                 const el = document.getElementById(`card-${cardIdx}-${sec}`);
                 const btn = document.getElementById(`btn-${cardIdx}-${sec}`);
-                if (el && btn) {
-                    if (sec === sectionName) {
-                        el.classList.remove('hidden');
-                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition";
-                    } else {
-                        el.classList.add('hidden');
-                        btn.className = "flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition";
-                    }
-                }
+                if (!el || !btn) return;
+                const actif = sec === sectionName;
+                el.hidden = !actif;
+                btn.className = actif ? CLS_TAB_ON : CLS_TAB_OFF;
+                btn.setAttribute('aria-selected', actif);
             });
         }
 
-        function genererBarresHorizontalesUltraCompactes(votesGroupes) {
+        function barreVotes(pour, contre, abst, total, libelle) {
+            const w = n => (n / total * 100).toFixed(1);
+            return `<div class="barre-progression" role="img" aria-label="${esc(libelle)}">
+                <span class="bg-pour" style="width: ${w(pour)}%"></span>
+                <span class="bg-contre" style="width: ${w(contre)}%"></span>
+                <span class="bg-abstention" style="width: ${w(abst)}%"></span>
+            </div>`;
+        }
+
+        function genererPanneauVote(votesGroupes) {
             if (!Array.isArray(votesGroupes) || votesGroupes.length === 0) {
-                return '<p class="text-xs text-slate-400 italic py-2">Détail par groupe indisponible.</p>';
+                return '<p class="text-sm text-slate-600 italic py-2">Détail du vote indisponible.</p>';
             }
 
-            const groupesTries = votesGroupes.map(g => {
+            const groupes = votesGroupes.map(g => {
                 const nom = getNomGroupe(g.nom_groupe);
                 const meta = getMetadonneesGroupe(nom);
                 const p = Number(g.detail?.pour || 0);
                 const c = Number(g.detail?.contre || 0);
                 const a = Number(g.detail?.abstention || 0);
                 return { nom, meta, pour: p, contre: c, abstention: a, total: p + c + a };
-            }).sort((a, b) => a.meta.o - b.meta.o);
+            }).sort((a, b) => a.meta.o - b.meta.o).filter(g => g.total > 0);
+
+            const T = groupes.reduce((acc, g) => ({ pour: acc.pour + g.pour, contre: acc.contre + g.contre, abstention: acc.abstention + g.abstention }), { pour: 0, contre: 0, abstention: 0 });
+            const total = T.pour + T.contre + T.abstention;
+            if (total === 0) return '<p class="text-sm text-slate-600 italic py-2">Détail du vote indisponible.</p>';
+
+            const ligne = (g, gras) => {
+                const style = (cle, couleur) => gras === cle ? `font-bold ${couleur}` : '';
+                return `<span class="${style('pour', 'text-emerald-700')}">Pour ${g.pour}</span> · <span class="${style('contre', 'text-rose-700')}">Contre ${g.contre}</span> · <span class="${style('abst', 'text-slate-900')}">Abst. ${g.abstention}</span>`;
+            };
 
             return `
-                <div class="pt-1">
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium pb-1.5 mb-2 border-b border-slate-100">
-                        <span class="flex items-center gap-2">
-                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Pour</span>
-                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Contre</span>
-                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Abstention</span>
-                        </span>
-                    </div>
+                <div class="bg-slate-50/60 p-3 rounded-xl border border-slate-100">
+                    <p class="text-sm font-bold text-slate-900 mb-1.5">Résultat d'ensemble <span class="font-normal text-slate-600">· ${total} votes exprimés</span></p>
+                    ${barreVotes(T.pour, T.contre, T.abstention, total, `Ensemble : ${T.pour} pour, ${T.contre} contre, ${T.abstention} abstentions`)}
+                    <p class="mt-2 text-sm text-slate-800">
+                        <span class="font-semibold text-emerald-700">Pour ${T.pour}</span> ·
+                        <span class="font-semibold text-rose-700">Contre ${T.contre}</span> ·
+                        <span class="font-semibold text-slate-700">Abstention ${T.abstention}</span>
+                    </p>
 
-                    <!-- Grille 2 colonnes forcée sur mobile et ordinateur -->
-                    <div class="grid grid-cols-2 gap-x-3 gap-y-2">
-                        ${groupesTries.map(g => {
-                            if (g.total === 0) return '';
-                            const pctPour = ((g.pour / g.total) * 100).toFixed(0);
-                            const pctContre = ((g.contre / g.total) * 100).toFixed(0);
-                            const pctAbst = ((g.abstention / g.total) * 100).toFixed(0);
-
-                            let majTexte = "";
-                            let majColor = "text-slate-500";
-                            if (g.pour >= g.contre && g.pour >= g.abstention) {
-                                majTexte = `Pour : ${g.pour} (${pctPour}%)`;
-                                majColor = "text-emerald-600";
-                            } else if (g.contre >= g.pour && g.contre >= g.abstention) {
-                                majTexte = `Contre : ${g.contre} (${pctContre}%)`;
-                                majColor = "text-rose-600";
-                            } else {
-                                majTexte = `Abst. : ${g.abstention} (${pctAbst}%)`;
-                                majColor = "text-slate-500";
-                            }
-
-                            const tooltipTexte = `${g.nom} — Pour: ${g.pour} (${pctPour}%) | Contre: ${g.contre} (${pctContre}%) | Abst: ${g.abstention} (${pctAbst}%)`;
-
-                            return `
-                                <div class="space-y-0.5" title="${tooltipTexte}">
-                                    <div class="flex items-center justify-between text-[11px]">
-                                        <span class="font-bold text-slate-800 truncate pr-1 flex items-center gap-1">
-                                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${g.meta.color}"></span>
-                                            ${g.nom}
-                                        </span>
-                                        <span class="font-semibold text-[10px] ${majColor} flex-shrink-0">
-                                            ${majTexte}
-                                        </span>
-                                    </div>
-                                    <div class="barre-progression">
-                                        <span class="bg-pour" style="width: ${pctPour}%"></span>
-                                        <span class="bg-contre" style="width: ${pctContre}%"></span>
-                                        <span class="bg-abstention" style="width: ${pctAbst}%"></span>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
+                    <details class="mt-2">
+                        <summary class="cursor-pointer py-3 text-sm font-semibold text-indigo-700">Détail par groupe (${groupes.length})</summary>
+                        <div class="flex items-center gap-3 text-xs text-slate-600 pb-2 mb-3 border-b border-slate-100">
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>Pour</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span>Contre</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-slate-300"></span>Abstention</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                            ${groupes.map(g => {
+                                let maj = 'abst';
+                                if (g.pour >= g.contre && g.pour >= g.abstention) maj = 'pour';
+                                else if (g.contre >= g.pour && g.contre >= g.abstention) maj = 'contre';
+                                return `
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-900 flex items-center gap-1.5 break-words">
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${g.meta.color}"></span>${esc(g.nom)}
+                                        </p>
+                                        <div class="my-1">${barreVotes(g.pour, g.contre, g.abstention, g.total, `${g.nom} : ${g.pour} pour, ${g.contre} contre, ${g.abstention} abstentions`)}</div>
+                                        <p class="text-xs text-slate-700">${ligne(g, maj)}</p>
+                                    </div>`;
+                            }).join('')}
+                        </div>
+                    </details>
+                </div>`;
         }
 
-        function afficherScrutins() {
-            const container = document.getElementById('scrutins-container');
-            if (!container) return;
-
-            let filtrés = [];
-
-            if (termeRecherche) {
-                let resultatsAvecScore = scrutinsData.map(s => {
+        function mettreAJourFiltresEtAffichage() {
+            if (scrutinUnique) {
+                scrutinsFiltresActuels = scrutinsData.filter(x => x._id === scrutinUnique);
+            } else if (termeRecherche) {
+                scrutinsFiltresActuels = scrutinsData.map(x => {
+                    if (themeActif !== 'TOUS' && x.theme_principal !== themeActif) return { scrutin: x, score: 0 };
                     let score = 0;
-                    const tv = normaliserTexte(s.titre_vulgarise);
-                    const to = normaliserTexte(s.titre_officiel || s.titre);
-                    const th = normaliserTexte(s.theme_principal);
-                    const ctx = normaliserTexte(JSON.stringify(s.contexte_et_objectif || ''));
-
-                    if (themeActif !== 'TOUS' && s.theme_principal !== themeActif) {
-                        return { scrutin: s, score: 0 };
-                    }
-
-                    if (tv.includes(termeRecherche)) score += 10;
-                    if (to.includes(termeRecherche)) score += 5;
-                    if (th.includes(termeRecherche)) score += 3;
-                    if (ctx.includes(termeRecherche)) score += 1;
-
-                    return { scrutin: s, score: score };
-                });
-
-                filtrés = resultatsAvecScore
-                    .filter(item => item.score > 0)
-                    .sort((a, b) => b.score - a.score)
-                    .map(item => item.scrutin);
+                    if (x._tv.includes(termeRecherche)) score += 10;
+                    if (x._to.includes(termeRecherche)) score += 5;
+                    if (x._th.includes(termeRecherche)) score += 3;
+                    if (x._ctx.includes(termeRecherche)) score += 1;
+                    return { scrutin: x, score };
+                })
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(item => item.scrutin);
             } else {
-                filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
+                scrutinsFiltresActuels = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(x => x.theme_principal === themeActif);
             }
 
-            if (filtrés.length === 0) {
+            if (!scrutinUnique && tri !== 'alea') {
+                const v = x => { const d = Date.parse(x.date || x.dateScrutin || ''); return isNaN(d) ? 0 : d; };
+                scrutinsFiltresActuels = [...scrutinsFiltresActuels].sort((a, b) => tri === 'recent' ? v(b) - v(a) : v(a) - v(b));
+            }
+
+            document.getElementById('bandeau-unique').hidden = !scrutinUnique;
+            synchroniserURL();
+            afficherScrutins(0);
+        }
+
+        function chargerPlus() {
+            const debut = limiteAffichage;
+            limiteAffichage += 10;
+            afficherScrutins(debut); // n'ajoute que les nouvelles cartes : l'état des onglets est conservé
+        }
+
+        function lienScrutinOfficiel(sc) {
+            if (sc.url || sc.lien) return sc.url || sc.lien;
+            const num = sc.numero || sc.numero_scrutin;
+            if (num && sc.legislature) return `https://www.assemblee-nationale.fr/dyn/${sc.legislature}/scrutins/${num}`;
+            return 'https://www.assemblee-nationale.fr/dyn/scrutins';
+        }
+
+        function deplierObjet(idx) {
+            const o = document.getElementById('obj-' + idx);
+            const b = document.getElementById('more-' + idx);
+            const replie = o.classList.toggle('line-clamp-5');
+            b.textContent = replie ? 'Lire la suite' : 'Réduire';
+            b.setAttribute('aria-expanded', !replie);
+        }
+
+        function verifierTroncatures(debut) {
+            const fin = Math.min(limiteAffichage, scrutinsFiltresActuels.length);
+            for (let i = debut; i < fin; i++) {
+                const o = document.getElementById('obj-' + i);
+                const b = document.getElementById('more-' + i);
+                if (o && b) b.hidden = o.scrollHeight <= o.clientHeight + 1;
+            }
+        }
+
+        function rendreCarte(scrutin, idx) {
+            const decisionBrute = scrutin.resultat_global?.decision || scrutin.sort_libelle || '';
+            const dl = decisionBrute.toLowerCase();
+            const estAdopte = dl.includes('adopté');
+            const estRejete = dl.includes('rejeté');
+            const decision = estAdopte ? 'Adopté' : estRejete ? 'Rejeté' : (decisionBrute || 'Résultat');
+            const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : estRejete ? 'bg-rose-50 text-rose-800 border-rose-200'
+                : 'bg-slate-100 text-slate-700 border-slate-200';
+            const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
+            const vide = h => !h || !h.replace(/<[^>]*>/g, '').trim();
+            const aucune = '<p class="text-sm text-slate-600 italic">Pas encore d\'analyse disponible pour ce scrutin.</p>';
+
+            return `
+            <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
+
+                <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-2">
+                    <span class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-md">${scrutin.theme_principal || 'Général'}</span>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="text-xs text-slate-600">${formaterDate(scrutin.date || scrutin.dateScrutin)}</span>
+                        <span class="text-xs font-bold px-2 py-1 rounded-full border ${badgeColor}">${decision}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3 space-y-2">
+                    <h3 class="text-lg font-bold text-slate-900 leading-snug">${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}</h3>
+                    ${vide(blocs.intentionsHtml) ? '' : `
+                    <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
+                        <strong class="block text-xs font-bold text-blue-900 mb-1"><span aria-hidden="true">📋 </span>L'objet du vote</strong>
+                        <div id="obj-${idx}" class="line-clamp-5">${blocs.intentionsHtml}</div>
+                        <button type="button" id="more-${idx}" hidden onclick="deplierObjet(${idx})" aria-expanded="false" class="mt-1 min-h-[44px] text-sm font-semibold text-indigo-700">Lire la suite</button>
+                    </div>`}
+                </div>
+
+                <div role="tablist" aria-label="Détails du scrutin" class="flex bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
+                    <button type="button" role="tab" id="btn-${idx}-vote" aria-selected="true" aria-controls="card-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="${CLS_TAB_ON}"><span aria-hidden="true" class="hidden min-[400px]:inline">📊 </span>Vote</button>
+                    <button type="button" role="tab" id="btn-${idx}-debat" aria-selected="false" aria-controls="card-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="${CLS_TAB_OFF}"><span aria-hidden="true" class="hidden min-[400px]:inline">⚖️ </span>Débat</button>
+                    <button type="button" role="tab" id="btn-${idx}-experts" aria-selected="false" aria-controls="card-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="${CLS_TAB_OFF}"><span aria-hidden="true" class="hidden min-[400px]:inline">🔍 </span>Fact-check</button>
+                </div>
+
+                <div id="card-${idx}-vote" role="tabpanel" aria-labelledby="btn-${idx}-vote">
+                    ${genererPanneauVote(scrutin.votes_par_groupe)}
+                </div>
+
+                <div id="card-${idx}-debat" role="tabpanel" aria-labelledby="btn-${idx}-debat" hidden class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500">
+                    <strong class="block text-sm font-bold text-amber-900 mb-1">Points de clivage et débats</strong>
+                    ${vide(blocs.critiqueHtml) ? aucune : blocs.critiqueHtml}
+                </div>
+
+                <div id="card-${idx}-experts" role="tabpanel" aria-labelledby="btn-${idx}-experts" hidden class="bg-purple-50/80 p-3 rounded-xl border border-purple-200">
+                    <strong class="block text-sm font-bold text-purple-950 mb-1">Fact-check et éclairage d'expert</strong>
+                    <p class="text-xs text-slate-700 mb-2">Contenu généré par IA : à recouper avec la source officielle.</p>
+                    <div class="text-sm text-slate-700 leading-relaxed space-y-1">
+                        ${vide(blocs.expertsHtml) ? aucune : blocs.expertsHtml}
+                    </div>
+                </div>
+
+                <p class="mt-3 text-xs text-slate-600"><span aria-hidden="true">✨ </span>Résumé généré par IA : il peut comporter des erreurs.</p>
+                <div class="mt-1 flex flex-wrap gap-2">
+                    <a href="${esc(lienScrutinOfficiel(scrutin))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center min-h-[44px] px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50">Source officielle</a>
+                    <button type="button" onclick="partager(${idx})" class="min-h-[44px] px-4 rounded-xl border border-indigo-200 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Partager</button>
+                </div>
+            </article>`;
+        }
+
+        function afficherScrutins(debut = 0) {
+            const container = document.getElementById('scrutins-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            if (!container) return;
+
+            const n = scrutinsFiltresActuels.length;
+            document.getElementById('compteur').textContent = `${n} scrutin${n > 1 ? 's' : ''}`;
+
+            if (n === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4">
-                        <p class="text-slate-400 text-xs">Aucun résultat trouvé.</p>
+                    <div class="text-center py-10 bg-white rounded-2xl border border-slate-200 p-4">
+                        <p class="text-slate-700 text-sm">Aucun scrutin ne correspond à votre recherche.</p>
+                        <button type="button" onclick="reinitialiserFiltres()" class="mt-4 min-h-[44px] px-6 rounded-xl bg-indigo-700 text-white text-sm font-semibold">Réinitialiser les filtres</button>
                     </div>`;
+                paginationContainer.classList.add('hidden');
                 return;
             }
 
-            container.innerHTML = filtrés.map((scrutin, idx) => {
-                const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
-                const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
-                const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
+            const html = scrutinsFiltresActuels.slice(debut, limiteAffichage).map((sc, i) => rendreCarte(sc, debut + i)).join('');
+            if (debut === 0) container.innerHTML = html;
+            else container.insertAdjacentHTML('beforeend', html);
 
-                return `
-                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
-                    
-                    <!-- Header Carte -->
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                        <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                            ${scrutin.theme_principal || 'Général'}
-                        </span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
-                                ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Titre & Mesures intégrées -->
-                    <div class="mb-3 space-y-2">
-                        <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                            ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
-                        </h3>
-                        <!-- Mesures clés condensées -->
-                        <div class="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
-                            <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-0.5">📋 Ce que change la loi</strong>
-                            ${blocs.intentionsHtml}
-                        </div>
-                    </div>
-
-                    <!-- 3 Onglets -->
-                    <div class="flex bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
-                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
-                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
-                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
-                    </div>
-
-                    <!-- Contenu -->
-                    <div class="space-y-3">
-                        
-                        <!-- 1. Barres Horizontales des votes (Affichées par défaut sous l'onglet "vote") -->
-                        <div id="card-${idx}-vote" class="block bg-slate-50/60 p-3 rounded-xl border border-slate-100">
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ventilation du vote par groupe</h4>
-                            ${genererBarresHorizontalesUltraCompactes(scrutin.votes_par_groupe)}
-                        </div>
-
-                        <!-- Blocs de texte d'analyse gérés par les onglets -->
-                        <div>
-                            <!-- Fact-check : affiché par défaut avec l'onglet "Vote" -->
-                            <div id="card-${idx}-experts" class="block pt-0.5">
-                                <div class="bg-purple-50/80 p-3 rounded-xl border border-purple-200 shadow-2xs h-full">
-                                    <strong class="block text-[10px] font-bold text-purple-950 uppercase tracking-wider mb-1.5">
-                                        🔍 Fact-check & Éclairage expert
-                                    </strong>
-                                    <div class="text-slate-700 text-xs leading-relaxed space-y-1">
-                                        ${blocs.expertsHtml}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Débat : masqué par défaut, affiché si on clique sur l'onglet Débat -->
-                            <div id="card-${idx}-debat" class="hidden space-y-3 pt-0.5">
-                                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
-                                    <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
-                                    ${blocs.critiqueHtml}
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </article>`;
-            }).join('');
+            verifierTroncatures(debut);
+            paginationContainer.classList.toggle('hidden', limiteAffichage >= n);
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
+        window.addEventListener('scroll', () => {
+            document.getElementById('btn-haut').hidden = window.scrollY < 600;
+        }, { passive: true });
     </script>
 </body>
 </html>
