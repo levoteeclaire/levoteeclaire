@@ -21,16 +21,6 @@
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
-
-        /* Styles spécifiques pour le mode Deck sur mobile */
-        @media (max-width: 768px) {
-            .desktop-view { display: none !important; }
-            .mobile-deck-view { display: flex !important; }
-        }
-        @media (min-width: 769px) {
-            .desktop-view { display: block !important; }
-            .mobile-deck-view { display: none !important; }
-        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
@@ -40,23 +30,19 @@
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="text-xl">🏛️</span>
-                <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé <span class="text-[10px] text-indigo-600 font-normal md:hidden">✨ Mode Deck</span></h1>
+                <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
             </div>
-            <div class="flex items-center gap-2">
-                <!-- Compteur visible uniquement sur mobile en mode deck -->
-                <span id="deck-counter" class="text-[10px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full md:hidden">1 / 1</span>
-                <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
-                    Direct
-                </span>
-            </div>
+            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
+                Direct Assemblée
+            </span>
         </div>
     </header>
 
     <!-- Contenu Principal -->
-    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4 flex flex-col">
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4">
         
         <!-- Zone de Filtres & Recherche -->
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex-shrink-0">
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
                 <input 
@@ -77,33 +63,15 @@
             </div>
         </div>
 
-        <!-- VERSION ORDINATEUR : Flux vertical classique -->
-        <section id="scrutins-container-desktop" class="desktop-view space-y-4">
+        <!-- Conteneur des cartes de scrutins -->
+        <section id="scrutins-container" class="space-y-4">
             <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
-        </section>
-
-        <!-- VERSION TÉLÉPHONE : Mode Deck / Pile de cartes interactif -->
-        <section id="scrutins-container-mobile" class="mobile-deck-view flex-col justify-between flex-grow relative pb-2">
-            <div id="deck-card-wrapper" class="w-full flex-grow flex flex-col justify-center">
-                <!-- La carte active s'affichera ici -->
-            </div>
-
-            <!-- Barre d'action tactile pour swiper le deck sur mobile -->
-            <div class="flex items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm mt-3 flex-shrink-0">
-                <button onclick="changerDeckCard(-1)" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1">
-                    <span>⬅️</span> Précédente
-                </button>
-                <span id="deck-status-text" class="text-[10px] text-slate-400 font-medium text-center">Glissez ou boutons</span>
-                <button onclick="changerDeckCard(1)" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1">
-                    Suivante <span>➡️</span>
-                </button>
-            </div>
         </section>
 
     </main>
 
     <!-- Pied de page -->
-    <footer class="desktop-view border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
+    <footer class="border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
         <p>Données officielles en Open Data • Traitement pédagogique neutre par IA</p>
     </footer>
 
@@ -112,24 +80,54 @@
         let scrutinsData = [];
         let themeActif = 'TOUS';
         let termeRecherche = '';
-        let currentDeckIndex = 0; // Index de la carte active pour le mode Deck mobile
-        let filtresActuels = []; // Stocke les scrutins filtrés en cours
 
+        // Mapping complet des groupes parlementaires
         const MAPPING_GROUPES = {
-            "PO840056": "Non inscrit", "PO845401": "RN", "PO845407": "EPR", "PO845413": "LFI - NFP",
-            "PO845419": "Socialistes", "PO845425": "Droite Républicaine", "PO845439": "Écologiste",
-            "PO845454": "Les Démocrates", "PO845470": "Horizons", "PO845485": "LIOT",
-            "PO845514": "GDR", "PO845520": "À Droite", "PO847173": "UDR", "PO872880": "UDR",
-            "PO793087": "Non inscrit", "PO800484": "MoDem", "PO800490": "LFI - NUPES",
-            "PO800496": "Socialistes", "PO800502": "GDR", "PO800508": "Les Républicains",
-            "PO800514": "Horizons", "PO800520": "RN", "PO800526": "Écologiste",
-            "PO800532": "LIOT", "PO800538": "Renaissance", "PO830170": "Socialistes",
-            "PO723569": "Non inscrit", "PO730934": "LR", "PO730940": "GDR",
-            "PO730946": "Nouvelle Gauche", "PO730952": "UDI", "PO730958": "LFI",
-            "PO730964": "LaREM", "PO730970": "MoDem", "PO744425": "UDI",
-            "PO758835": "Socialistes", "PO759900": "LT", "PO765636": "UDI",
-            "PO767217": "UDI", "PO771789": "EDS", "PO771889": "UDI",
-            "PO771923": "Agir", "PO774834": "MoDem"
+            "PO840056": "Non inscrit",
+            "PO845401": "RN",
+            "PO845407": "EPR",
+            "PO845413": "LFI - NFP",
+            "PO845419": "Socialistes",
+            "PO845425": "Droite Républicaine",
+            "PO845439": "Écologiste",
+            "PO845454": "Les Démocrates",
+            "PO845470": "Horizons",
+            "PO845485": "LIOT",
+            "PO845514": "GDR",
+            "PO845520": "À Droite",
+            "PO847173": "UDR",
+            "PO872880": "UDR",
+
+            "PO793087": "Non inscrit",
+            "PO800484": "MoDem",
+            "PO800490": "LFI - NUPES",
+            "PO800496": "Socialistes",
+            "PO800502": "GDR",
+            "PO800508": "Les Républicains",
+            "PO800514": "Horizons",
+            "PO800520": "RN",
+            "PO800526": "Écologiste",
+            "PO800532": "LIOT",
+            "PO800538": "Renaissance",
+            "PO830170": "Socialistes",
+
+            "PO723569": "Non inscrit",
+            "PO730934": "LR",
+            "PO730940": "GDR",
+            "PO730946": "Nouvelle Gauche",
+            "PO730952": "UDI",
+            "PO730958": "LFI",
+            "PO730964": "LaREM",
+            "PO730970": "MoDem",
+            "PO744425": "UDI",
+            "PO758835": "Socialistes",
+            "PO759900": "LT",
+            "PO765636": "UDI",
+            "PO767217": "UDI",
+            "PO771789": "EDS",
+            "PO771889": "UDI",
+            "PO771923": "Agir",
+            "PO774834": "MoDem"
         };
 
         const ORDRE_HEMICYCLE = [
@@ -167,7 +165,6 @@
 
         function gererRecherche() {
             termeRecherche = normaliserTexte(document.getElementById('searchInput').value.trim());
-            currentDeckIndex = 0;
             afficherScrutins();
         }
 
@@ -189,9 +186,10 @@
                 afficherScrutins();
             } catch (error) {
                 console.error("Erreur chargement :", error);
-                document.getElementById('scrutins-container-desktop').innerHTML = `
+                document.getElementById('scrutins-container').innerHTML = `
                     <div class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
                         <p class="text-xs font-bold text-rose-700">Impossible de charger le fichier JSON.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Vérifiez que le serveur local est actif.</p>
                     </div>`;
             }
         }
@@ -241,7 +239,6 @@
 
         function filtrerTheme(theme) {
             themeActif = theme;
-            currentDeckIndex = 0;
             document.querySelectorAll('.btn-theme').forEach(btn => {
                 const txt = btn.innerText.trim();
                 if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
@@ -293,6 +290,8 @@
                             <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Abstention</span>
                         </span>
                     </div>
+
+                    <!-- Grille 2 colonnes forcée sur mobile et ordinateur -->
                     <div class="grid grid-cols-2 gap-x-3 gap-y-2">
                         ${groupesTries.map(g => {
                             if (g.total === 0) return '';
@@ -313,14 +312,18 @@
                                 majColor = "text-slate-500";
                             }
 
+                            const tooltipTexte = `${g.nom} — Pour: ${g.pour} (${pctPour}%) | Contre: ${g.contre} (${pctContre}%) | Abst: ${g.abstention} (${pctAbst}%)`;
+
                             return `
-                                <div class="space-y-0.5">
+                                <div class="space-y-0.5" title="${tooltipTexte}">
                                     <div class="flex items-center justify-between text-[11px]">
                                         <span class="font-bold text-slate-800 truncate pr-1 flex items-center gap-1">
                                             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${g.meta.color}"></span>
                                             ${g.nom}
                                         </span>
-                                        <span class="font-semibold text-[10px] ${majColor} flex-shrink-0">${majTexte}</span>
+                                        <span class="font-semibold text-[10px] ${majColor} flex-shrink-0">
+                                            ${majTexte}
+                                        </span>
                                     </div>
                                     <div class="barre-progression">
                                         <span class="bg-pour" style="width: ${pctPour}%"></span>
@@ -335,80 +338,9 @@
             `;
         }
 
-        function genererHtmlCarte(scrutin, idx) {
-            const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
-            const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
-            const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
-
-            return `
-            <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
-                <!-- Header Carte -->
-                <div class="flex items-center justify-between gap-2 mb-2">
-                    <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                        ${scrutin.theme_principal || 'Général'}
-                    </span>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
-                            ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Titre & Mesures intégrées -->
-                <div class="mb-3 space-y-2">
-                    <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                        ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
-                    </h3>
-                    <div class="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
-                        <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-0.5">📋 Ce que change la loi</strong>
-                        ${blocs.intentionsHtml}
-                    </div>
-                </div>
-
-                <!-- 3 Onglets -->
-                <div class="flex bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
-                    <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
-                    <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
-                    <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
-                </div>
-
-                <!-- Contenu -->
-                <div class="space-y-3">
-                    <!-- Barres de votes -->
-                    <div id="card-${idx}-vote" class="block bg-slate-50/60 p-3 rounded-xl border border-slate-100">
-                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ventilation du vote par groupe</h4>
-                        ${genererBarresHorizontalesUltraCompactes(scrutin.votes_par_groupe)}
-                    </div>
-
-                    <!-- Blocs d'analyse -->
-                    <div>
-                        <div id="card-${idx}-experts" class="block pt-0.5">
-                            <div class="bg-purple-50/80 p-3 rounded-xl border border-purple-200 shadow-2xs h-full">
-                                <strong class="block text-[10px] font-bold text-purple-950 uppercase tracking-wider mb-1.5">
-                                    🔍 Fact-check & Éclairage expert
-                                </strong>
-                                <div class="text-slate-700 text-xs leading-relaxed space-y-1">
-                                    ${blocs.expertsHtml}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="card-${idx}-debat" class="hidden space-y-3 pt-0.5">
-                            <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
-                                <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
-                                ${blocs.critiqueHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>`;
-        }
-
         function afficherScrutins() {
-            const containerDesktop = document.getElementById('scrutins-container-desktop');
-            const wrapperMobile = document.getElementById('deck-card-wrapper');
-            if (!containerDesktop || !wrapperMobile) return;
+            const container = document.getElementById('scrutins-container');
+            if (!container) return;
 
             let filtrés = [];
 
@@ -440,38 +372,90 @@
                 filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
             }
 
-            filtresActuels = filtrés;
-
             if (filtrés.length === 0) {
-                const msgVide = `<div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4"><p class="text-slate-400 text-xs">Aucun résultat trouvé.</p></div>`;
-                containerDesktop.innerHTML = msgVide;
-                wrapperMobile.innerHTML = msgVide;
-                document.getElementById('deck-counter').innerText = `0 / 0`;
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4">
+                        <p class="text-slate-400 text-xs">Aucun résultat trouvé.</p>
+                    </div>`;
                 return;
             }
 
-            // 1. Rendu Bureau (flux classique complet)
-            containerDesktop.innerHTML = filtrés.map((scrutin, idx) => genererHtmlCarte(scrutin, idx)).join('');
+            container.innerHTML = filtrés.map((scrutin, idx) => {
+                const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
+                const badgeColor = estAdopte ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+                const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
 
-            // 2. Rendu Mobile (Mode Deck : affiche uniquement la carte active courante)
-            if (currentDeckIndex >= filtrés.length) currentDeckIndex = 0;
-            wrapperMobile.innerHTML = genererHtmlCarte(filtrés[currentDeckIndex], currentDeckIndex);
-            document.getElementById('deck-counter').innerText = `${currentDeckIndex + 1} / ${filtrés.length}`;
-        }
+                return `
+                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
+                    
+                    <!-- Header Carte -->
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                            ${scrutin.theme_principal || 'Général'}
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
+                                ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
+                            </span>
+                        </div>
+                    </div>
 
-        function changerDeckCard(direction) {
-            if (filtresActuels.length === 0) return;
-            currentDeckIndex += direction;
-            if (currentDeckIndex < 0) currentDeckIndex = filtresActuels.length - 1;
-            if (currentDeckIndex >= filtresActuels.length) currentDeckIndex = 0;
-            
-            // Met à jour l'affichage mobile du deck
-            const wrapperMobile = document.getElementById('deck-card-wrapper');
-            wrapperMobile.innerHTML = genererHtmlCarte(filtresActuels[currentDeckIndex], currentDeckIndex);
-            document.getElementById('deck-counter').innerText = `${currentDeckIndex + 1} / ${filtresActuels.length}`;
-            
-            // Remonte le scroll en haut de la carte pour le confort de lecture
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+                    <!-- Titre & Mesures intégrées -->
+                    <div class="mb-3 space-y-2">
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                            ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
+                        </h3>
+                        <!-- Mesures clés condensées -->
+                        <div class="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
+                            <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-0.5">📋 Ce que change la loi</strong>
+                            ${blocs.intentionsHtml}
+                        </div>
+                    </div>
+
+                    <!-- 3 Onglets -->
+                    <div class="flex bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
+                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
+                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
+                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
+                    </div>
+
+                    <!-- Contenu -->
+                    <div class="space-y-3">
+                        
+                        <!-- 1. Barres Horizontales des votes (Affichées par défaut sous l'onglet "vote") -->
+                        <div id="card-${idx}-vote" class="block bg-slate-50/60 p-3 rounded-xl border border-slate-100">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ventilation du vote par groupe</h4>
+                            ${genererBarresHorizontalesUltraCompactes(scrutin.votes_par_groupe)}
+                        </div>
+
+                        <!-- Blocs de texte d'analyse gérés par les onglets -->
+                        <div>
+                            <!-- Fact-check : affiché par défaut avec l'onglet "Vote" -->
+                            <div id="card-${idx}-experts" class="block pt-0.5">
+                                <div class="bg-purple-50/80 p-3 rounded-xl border border-purple-200 shadow-2xs h-full">
+                                    <strong class="block text-[10px] font-bold text-purple-950 uppercase tracking-wider mb-1.5">
+                                        🔍 Fact-check & Éclairage expert
+                                    </strong>
+                                    <div class="text-slate-700 text-xs leading-relaxed space-y-1">
+                                        ${blocs.expertsHtml}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Débat : masqué par défaut, affiché si on clique sur l'onglet Débat -->
+                            <div id="card-${idx}-debat" class="hidden space-y-3 pt-0.5">
+                                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
+                                    <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
+                                    ${blocs.critiqueHtml}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </article>`;
+            }).join('');
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
