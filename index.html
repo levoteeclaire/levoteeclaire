@@ -21,19 +21,6 @@
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
-
-        /* Sur mobile : effet d'aperçu de la carte suivante pour inciter au scroll naturel */
-        @media (max-width: 768px) {
-            .mobile-scroll-container {
-                scroll-snap-type: y proximity;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            .mobile-card-snap {
-                scroll-snap-align: center;
-                margin-bottom: 1.5rem;
-            }
-        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
@@ -77,7 +64,7 @@
         </div>
 
         <!-- Conteneur des cartes de scrutins -->
-        <section id="scrutins-container" class="mobile-scroll-container space-y-5">
+        <section id="scrutins-container" class="space-y-6">
             <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
         </section>
 
@@ -399,11 +386,8 @@
                 const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
 
                 return `
-                <article class="mobile-card-snap bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm relative">
+                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
                     
-                    <!-- Petite poignée visuelle pour indiquer subtilement qu'on peut faire défiler -->
-                    <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3 md:hidden"></div>
-
                     <!-- Header Carte -->
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
@@ -422,7 +406,7 @@
                         <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
                             ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
                         </h3>
-                        <!-- Mesures clés condensées -->
+                        <!-- Mesures clés condensées et lisibles -->
                         <div class="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
                             <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-0.5">📋 Ce que change la loi</strong>
                             ${blocs.intentionsHtml}
@@ -439,15 +423,15 @@
                     <!-- Contenu -->
                     <div class="space-y-3">
                         
-                        <!-- 1. Barres Horizontales des votes -->
+                        <!-- 1. Barres Horizontales des votes (Affichées par défaut sous l'onglet "vote") -->
                         <div id="card-${idx}-vote" class="block bg-slate-50/60 p-3 rounded-xl border border-slate-100">
                             <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ventilation du vote par groupe</h4>
                             ${genererBarresHorizontalesUltraCompactes(scrutin.votes_par_groupe)}
                         </div>
 
-                        <!-- Blocs d'analyse -->
+                        <!-- Blocs de texte d'analyse gérés par les onglets -->
                         <div>
-                            <!-- Fact-check -->
+                            <!-- Fact-check : affiché par défaut avec l'onglet "Vote" -->
                             <div id="card-${idx}-experts" class="block pt-0.5">
                                 <div class="bg-purple-50/80 p-3 rounded-xl border border-purple-200 shadow-2xs h-full">
                                     <strong class="block text-[10px] font-bold text-purple-950 uppercase tracking-wider mb-1.5">
@@ -459,7 +443,7 @@
                                 </div>
                             </div>
 
-                            <!-- Débat -->
+                            <!-- Débat : masqué par défaut, affiché si on clique sur l'onglet Débat -->
                             <div id="card-${idx}-debat" class="hidden space-y-3 pt-0.5">
                                 <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
                                     <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
