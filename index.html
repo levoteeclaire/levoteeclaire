@@ -9,7 +9,7 @@
     <style>
         .barre-progression {
             display: flex;
-            height: 10px;
+            height: 6px;
             border-radius: 9999px;
             overflow: hidden;
             background-color: #f1f5f9;
@@ -21,57 +21,87 @@
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
+
+        /* Comportement Swipe/Scroll mobile uniquement */
+        @media (max-width: 768px) {
+            .mobile-swipe-container {
+                scroll-snap-type: y mandatory;
+                overflow-y: scroll;
+                height: calc(100vh - 220px);
+                scroll-behavior: smooth;
+            }
+            .mobile-swipe-card {
+                scroll-snap-align: start;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
     <!-- En-tête -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-2xs">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-2xs flex-shrink-0">
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="text-xl">🏛️</span>
                 <h1 class="text-base font-bold text-slate-900 tracking-tight">Le Vote Éclairé</h1>
             </div>
-            <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
-                Direct Assemblée
-            </span>
+            <div class="flex items-center gap-2">
+                <!-- Compteur visible uniquement sur mobile -->
+                <span id="compteur-scrutin" class="md:hidden text-[10px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">1 / 1</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 uppercase tracking-wide">
+                    Direct Assemblée
+                </span>
+            </div>
         </div>
     </header>
 
     <!-- Contenu Principal -->
-    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4">
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex-grow w-full space-y-4 flex flex-col justify-between">
         
-        <!-- Zone de Filtres & Recherche -->
-        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    oninput="gererRecherche()" 
-                    placeholder="Rechercher un sujet, un mot-clé (ex: écologie, budget)..." 
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
-                >
-            </div>
+        <div>
+            <!-- Zone de Filtres & Recherche -->
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">🔍</span>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        oninput="gererRecherche()" 
+                        placeholder="Rechercher un sujet, un mot-clé (ex: écologie, budget)..." 
+                        class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                    >
+                </div>
 
-            <!-- Filtres thématiques -->
-            <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Thématiques</span>
-                <div id="theme-filters" class="flex flex-wrap gap-1.5">
-                    <button onclick="filtrerTheme('TOUS')" class="btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition">Tous</button>
+                <!-- Filtres thématiques -->
+                <div>
+                    <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Thématiques</span>
+                    <div id="theme-filters" class="flex flex-wrap gap-1.5">
+                        <button onclick="filtrerTheme('TOUS')" class="btn-theme bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium transition">Tous</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Conteneur des cartes de scrutins -->
-        <section id="scrutins-container" class="space-y-4">
+        <!-- Conteneur des cartes de scrutins (Scroll magnétique sur mobile, flux normal sur PC) -->
+        <section id="scrutins-container" class="mobile-swipe-container space-y-4 flex-grow">
             <div class="text-center py-12 text-slate-400 text-xs">Chargement des scrutins...</div>
         </section>
 
+        <!-- Barre de navigation tactile bas de page (Uniquement sur mobile) -->
+        <div class="md:hidden flex items-center justify-between bg-slate-800/90 backdrop-blur-md p-2 rounded-xl flex-shrink-0 text-white shadow-lg">
+            <button onclick="changerSlide(-1)" class="px-3 py-1 bg-white/10 hover:bg-white/20 font-bold text-xs rounded-lg transition">⬆️ Précédent</button>
+            <span id="texte-navigation" class="text-[11px] font-medium italic text-slate-300">Glissez ou utilisez les flèches</span>
+            <button onclick="changerSlide(1)" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 font-bold text-xs rounded-lg transition">Suivant ⬇️</button>
+        </div>
+
     </main>
 
-    <!-- Pied de page -->
-    <footer class="border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400">
+    <!-- Pied de page (masqué sur mobile pour laisser place au lecteur swipe) -->
+    <footer class="hidden md:block border-t border-slate-200 bg-white py-4 text-center text-[11px] text-slate-400 flex-shrink-0">
         <p>Données officielles en Open Data • Traitement pédagogique neutre par IA</p>
     </footer>
 
@@ -80,74 +110,73 @@
         let scrutinsData = [];
         let themeActif = 'TOUS';
         let termeRecherche = '';
+        let currentIndex = 0;
 
-        // Mapping complet des groupes parlementaires (17e, 16e, 15e législatures)
+        // Mapping complet des groupes parlementaires
         const MAPPING_GROUPES = {
             "PO840056": "Non inscrit",
-            "PO845401": "Rassemblement National",
-            "PO845407": "Ensemble pour la République",
-            "PO845413": "La France insoumise - NFP",
-            "PO845419": "Socialistes et apparentés",
+            "PO845401": "RN",
+            "PO845407": "EPR",
+            "PO845413": "LFI - NFP",
+            "PO845419": "Socialistes",
             "PO845425": "Droite Républicaine",
-            "PO845439": "Écologiste et Social",
+            "PO845439": "Écologiste",
             "PO845454": "Les Démocrates",
-            "PO845470": "Horizons & Indépendants",
-            "PO845485": "Libertés, Indépendants, Outre-mer et Territoires",
-            "PO845514": "Gauche Démocrate et Républicaine",
+            "PO845470": "Horizons",
+            "PO845485": "LIOT",
+            "PO845514": "GDR",
             "PO845520": "À Droite",
             "PO847173": "UDR",
-            "PO872880": "Union des droites pour la République",
+            "PO872880": "UDR",
 
             "PO793087": "Non inscrit",
-            "PO800484": "Démocrate (MoDem)",
-            "PO800490": "La France insoumise - NUPES",
-            "PO800496": "Socialistes et apparentés",
-            "PO800502": "Gauche démocrate et républicaine",
+            "PO800484": "MoDem",
+            "PO800490": "LFI - NUPES",
+            "PO800496": "Socialistes",
+            "PO800502": "GDR",
             "PO800508": "Les Républicains",
-            "PO800514": "Horizons et apparentés",
-            "PO800520": "Rassemblement National",
+            "PO800514": "Horizons",
+            "PO800520": "RN",
             "PO800526": "Écologiste",
             "PO800532": "LIOT",
             "PO800538": "Renaissance",
-            "PO830170": "Socialistes et apparentés",
+            "PO830170": "Socialistes",
 
             "PO723569": "Non inscrit",
-            "PO730934": "Les Républicains",
-            "PO730940": "Gauche démocrate et républicaine",
+            "PO730934": "LR",
+            "PO730940": "GDR",
             "PO730946": "Nouvelle Gauche",
-            "PO730952": "Les Constructifs (UDI)",
-            "PO730958": "La France insoumise",
-            "PO730964": "La République en Marche",
-            "PO730970": "Mouvement Démocrate",
-            "PO744425": "UDI et Indépendants",
-            "PO758835": "Socialistes et apparentés",
-            "PO759900": "Libertés et Territoires",
-            "PO765636": "UDI et Indépendants",
-            "PO767217": "UDI et Indépendants",
-            "PO771789": "Écologie Démocratie Solidarité",
-            "PO771889": "UDI et Indépendants",
-            "PO771923": "Agir ensemble",
-            "PO774834": "Mouvement Démocrate (MoDem)"
+            "PO730952": "UDI",
+            "PO730958": "LFI",
+            "PO730964": "LaREM",
+            "PO730970": "MoDem",
+            "PO744425": "UDI",
+            "PO758835": "Socialistes",
+            "PO759900": "LT",
+            "PO765636": "UDI",
+            "PO767217": "UDI",
+            "PO771789": "EDS",
+            "PO771889": "UDI",
+            "PO771923": "Agir",
+            "PO774834": "MoDem"
         };
 
-        // Ordre d'affichage de la Gauche vers la Droite dans l'Hémicycle
         const ORDRE_HEMICYCLE = [
-            { re: /insoumise/, o: 1, color: '#e11d48' },
-            { re: /gauche democrate/, o: 2, color: '#9f1239' },
+            { re: /insoumise|lfi/, o: 1, color: '#e11d48' },
+            { re: /gauche democrate|gdr/, o: 2, color: '#9f1239' },
             { re: /ecologiste|ecologie/, o: 3, color: '#16a34a' },
             { re: /socialiste|nouvelle gauche/, o: 4, color: '#ec4899' },
-            { re: /libertes|liot|territoires/, o: 5, color: '#d97706' },
+            { re: /libertes|liot|territoires|lt/, o: 5, color: '#d97706' },
             { re: /democrate|modem/, o: 6, color: '#f59e0b' },
-            { re: /ensemble|renaissance|republique en marche/, o: 7, color: '#1d4ed8' },
+            { re: /ensemble|renaissance|larem|epr/, o: 7, color: '#1d4ed8' },
             { re: /horizons/, o: 8, color: '#0ea5e9' },
             { re: /constructifs|udi|agir/, o: 9, color: '#38bdf8' },
-            { re: /droite republicaine|les republicains/, o: 10, color: '#1e3a8a' },
+            { re: /droite republicaine|les republicains|lr/, o: 10, color: '#1e3a8a' },
             { re: /udr|union des droites/, o: 11, color: '#312e81' },
-            { re: /rassemblement national/, o: 12, color: '#334155' },
+            { re: /rassemblement national|rn/, o: 12, color: '#334155' },
             { re: /non inscrit/, o: 99, color: '#94a3b8' }
         ];
 
-        // Normalisation sans accents et en minuscules
         const normaliserTexte = str => (str || '').normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
         function getNomGroupe(nomBrut) {
@@ -167,10 +196,10 @@
 
         function gererRecherche() {
             termeRecherche = normaliserTexte(document.getElementById('searchInput').value.trim());
+            currentIndex = 0;
             afficherScrutins();
         }
-        
-        // Fonction pour mélanger un tableau de façon aléatoire (Fisher-Yates)
+
         function melangerTableau(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -179,17 +208,12 @@
             return array;
         }
 
-        
-
         async function chargerDonnees() {
             try {
                 const response = await fetch('./data_processed/scrutins_enrichis.json');
                 if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 const data = await response.json();
-                
-                // Mélange aléatoire des scrutins au chargement
                 scrutinsData = melangerTableau(data);
-
                 initialiserFiltres();
                 afficherScrutins();
             } catch (error) {
@@ -197,10 +221,10 @@
                 document.getElementById('scrutins-container').innerHTML = `
                     <div class="text-center py-10 bg-white rounded-2xl border border-rose-200 p-6">
                         <p class="text-xs font-bold text-rose-700">Impossible de charger le fichier JSON.</p>
-                        <p class="text-[11px] text-slate-500 mt-1">Vérifiez que le serveur local est actif.</p>
                     </div>`;
             }
         }
+
         function formaterBlocRiche(contexteObj) {
             if (!contexteObj) return { intentionsHtml: '', critiqueHtml: '', expertsHtml: '' };
 
@@ -218,7 +242,7 @@
 
             const intentionsData = contexteObj.intentions_auteurs || contexteObj.mesures_cles || Object.values(contexteObj)[0];
             let intentionsHtml = Array.isArray(intentionsData) 
-                ? intentionsData.map(i => `<div class="mb-1.5 text-xs text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
+                ? intentionsData.map(i => `<div class="mb-1 text-xs text-slate-700">🔹 ${typeof i === 'object' ? Object.values(i).filter(Boolean).join(' : ') : i}</div>`).join('')
                 : `<div class="text-xs text-slate-700">${extraireTexte(intentionsData)}</div>`;
 
             const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || Object.values(contexteObj)[1];
@@ -246,6 +270,7 @@
 
         function filtrerTheme(theme) {
             themeActif = theme;
+            currentIndex = 0;
             document.querySelectorAll('.btn-theme').forEach(btn => {
                 const txt = btn.innerText.trim();
                 if (txt === theme || (theme === 'TOUS' && txt === 'Tous')) {
@@ -258,7 +283,7 @@
         }
 
         function switcherSousOnglet(cardIdx, sectionName) {
-            const sections = ['vote', 'essentiel', 'debat', 'experts'];
+            const sections = ['vote', 'debat', 'experts'];
             sections.forEach(sec => {
                 const el = document.getElementById(`card-${cardIdx}-${sec}`);
                 const btn = document.getElementById(`btn-${cardIdx}-${sec}`);
@@ -274,7 +299,7 @@
             });
         }
 
-        function genererBarresHorizontales(votesGroupes) {
+        function genererBarresHorizontalesUltraCompactes(votesGroupes) {
             if (!Array.isArray(votesGroupes) || votesGroupes.length === 0) {
                 return '<p class="text-xs text-slate-400 italic py-2">Détail par groupe indisponible.</p>';
             }
@@ -289,52 +314,50 @@
             }).sort((a, b) => a.meta.o - b.meta.o);
 
             return `
-                <div class="space-y-2.5 pt-1">
-                    <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium pb-1 border-b border-slate-100">
-                        <span class="flex items-center gap-3">
-                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Pour</span>
-                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Contre</span>
-                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Abstention</span>
+                <div class="pt-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium pb-1.5 mb-2 border-b border-slate-100">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Pour</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Contre</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Abstention</span>
                         </span>
-                        <span class="text-[10px] text-indigo-600 italic">💡 ️Survolez ou cliquez sur les barres/chiffres</span>
                     </div>
 
-                    <div class="space-y-2">
+                    <!-- Grille 2 colonnes forcée -->
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-2">
                         ${groupesTries.map(g => {
                             if (g.total === 0) return '';
-                            const pctPour = ((g.pour / g.total) * 100).toFixed(1);
-                            const pctContre = ((g.contre / g.total) * 100).toFixed(1);
-                            const pctAbst = ((g.abstention / g.total) * 100).toFixed(1);
+                            const pctPour = ((g.pour / g.total) * 100).toFixed(0);
+                            const pctContre = ((g.contre / g.total) * 100).toFixed(0);
+                            const pctAbst = ((g.abstention / g.total) * 100).toFixed(0);
 
-                            let majTexte = "Abstention";
+                            let majTexte = "";
                             let majColor = "text-slate-500";
                             if (g.pour >= g.contre && g.pour >= g.abstention) {
-                                majTexte = `Pour (${Math.round(pctPour)}%)`;
+                                majTexte = `Pour : ${g.pour} (${pctPour}%)`;
                                 majColor = "text-emerald-600";
                             } else if (g.contre >= g.pour && g.contre >= g.abstention) {
-                                majTexte = `Contre (${Math.round(pctContre)}%)`;
+                                majTexte = `Contre : ${g.contre} (${pctContre}%)`;
                                 majColor = "text-rose-600";
+                            } else {
+                                majTexte = `Abst. : ${g.abstention} (${pctAbst}%)`;
+                                majColor = "text-slate-500";
                             }
 
-                            // Tooltip complet pour le survol (ordinateur)
-                            const tooltipTexte = `${g.nom} — Pour : ${g.pour} (${Math.round(pctPour)}%) | Contre : ${g.contre} (${Math.round(pctContre)}%) | Abstention : ${g.abstention} (${Math.round(pctAbst)}%)`;
+                            const tooltipTexte = `${g.nom} — Pour: ${g.pour} (${pctPour}%) | Contre: ${g.contre} (${pctContre}%) | Abst: ${g.abstention} (${pctAbst}%)`;
 
                             return `
                                 <div class="space-y-0.5" title="${tooltipTexte}">
-                                    <div class="flex items-center justify-between text-xs">
-                                        <span class="font-medium text-slate-800 truncate pr-2 flex items-center gap-1.5">
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="font-bold text-slate-800 truncate pr-1 flex items-center gap-1">
                                             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${g.meta.color}"></span>
                                             ${g.nom}
                                         </span>
-                                        <!-- Cliquable sur mobile/desktop pour alterner % et voix brutes -->
-                                        <span onclick="basculerAffichageVoix(this)" 
-                                              data-pour="${pctPour}" data-contre="${pctContre}" data-abst="${pctAbst}"
-                                              data-v-pour="${g.pour}" data-v-contre="${g.contre}" data-v-abst="${g.abstention}"
-                                              class="font-bold text-[11px] ${majColor} flex-shrink-0 cursor-pointer select-none" title="Cliquer pour voir les voix exactes">
+                                        <span class="font-semibold text-[10px] ${majColor} flex-shrink-0">
                                             ${majTexte}
                                         </span>
                                     </div>
-                                    <div class="barre-progression" title="${tooltipTexte}">
+                                    <div class="barre-progression">
                                         <span class="bg-pour" style="width: ${pctPour}%"></span>
                                         <span class="bg-contre" style="width: ${pctContre}%"></span>
                                         <span class="bg-abstention" style="width: ${pctAbst}%"></span>
@@ -347,42 +370,38 @@
             `;
         }
 
-
-        function basculerAffichageVoix(element) {
-            const pPour = element.getAttribute('data-pour');
-            const pContre = element.getAttribute('data-contre');
-            const pAbst = element.getAttribute('data-abst');
-            
-            const vPour = element.getAttribute('data-v-pour');
-            const vContre = element.getAttribute('data-v-contre');
-            const vAbst = element.getAttribute('data-v-abst');
-
-            const texteActuel = element.innerText;
-            const texteVoix = `${vPour}p / ${vContre}c / ${vAbst}a`;
-
-            // Si on affiche déjà les voix, on remet les pourcentages, sinon l'inverse
-            if (texteActuel.includes('p /')) {
-                element.innerText = `${Math.round(pPour)}% / ${Math.round(pContre)}%`;
-            } else {
-                element.innerText = texteVoix;
-            }
-        }
-
         function afficherScrutins() {
             const container = document.getElementById('scrutins-container');
             if (!container) return;
 
-            let filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
+            let filtrés = [];
 
-            // Recherche insensible aux accents
             if (termeRecherche) {
-                filtrés = filtrés.filter(s => {
+                let resultatsAvecScore = scrutinsData.map(s => {
+                    let score = 0;
                     const tv = normaliserTexte(s.titre_vulgarise);
                     const to = normaliserTexte(s.titre_officiel || s.titre);
                     const th = normaliserTexte(s.theme_principal);
                     const ctx = normaliserTexte(JSON.stringify(s.contexte_et_objectif || ''));
-                    return tv.includes(termeRecherche) || to.includes(termeRecherche) || th.includes(termeRecherche) || ctx.includes(termeRecherche);
+
+                    if (themeActif !== 'TOUS' && s.theme_principal !== themeActif) {
+                        return { scrutin: s, score: 0 };
+                    }
+
+                    if (tv.includes(termeRecherche)) score += 10;
+                    if (to.includes(termeRecherche)) score += 5;
+                    if (th.includes(termeRecherche)) score += 3;
+                    if (ctx.includes(termeRecherche)) score += 1;
+
+                    return { scrutin: s, score: score };
                 });
+
+                filtrés = resultatsAvecScore
+                    .filter(item => item.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.scrutin);
+            } else {
+                filtrés = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(s => s.theme_principal === themeActif);
             }
 
             if (filtrés.length === 0) {
@@ -390,8 +409,13 @@
                     <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-4">
                         <p class="text-slate-400 text-xs">Aucun résultat trouvé.</p>
                     </div>`;
+                const cp = document.getElementById('compteur-scrutin');
+                if (cp) cp.innerText = `0 / 0`;
                 return;
             }
+
+            const cp = document.getElementById('compteur-scrutin');
+            if (cp) cp.innerText = `${currentIndex + 1} / ${filtrés.length}`;
 
             container.innerHTML = filtrés.map((scrutin, idx) => {
                 const estAdopte = (scrutin.resultat_global?.decision || scrutin.sort_libelle || '').toLowerCase().includes('adopté');
@@ -399,80 +423,90 @@
                 const blocs = formaterBlocRiche(scrutin.contexte_et_objectif);
 
                 return `
-                <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-2xs">
+                <article id="slide-${idx}" class="mobile-swipe-card bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs">
                     
-                    <!-- Header Carte -->
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                        <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                            ${scrutin.theme_principal || 'Général'}
-                        </span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
-                                ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
+                    <div>
+                        <!-- Header Carte -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                                ${scrutin.theme_principal || 'Général'}
                             </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-400">${scrutin.date || scrutin.dateScrutin || ''}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">
+                                    ${scrutin.resultat_global?.decision || scrutin.sort_libelle || 'Résultat'}
+                                </span>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Titre -->
-                    <div class="mb-4">
-                        <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-1">
-                            ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
-                        </h3>
-                        <p class="text-[11px] text-slate-400 italic line-clamp-2">
-                            📄 ${scrutin.titre_officiel || 'Titre officiel non disponible'}
-                        </p>
-                    </div>
+                        <!-- Titre & Mesures intégrées -->
+                        <div class="mb-3 space-y-2">
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                                ${scrutin.titre_vulgarise || scrutin.titre || 'Titre non disponible'}
+                            </h3>
+                            <div class="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
+                                <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-0.5">📋 Ce que change la loi</strong>
+                                ${blocs.intentionsHtml}
+                            </div>
+                        </div>
 
-                     <!-- Onglets mobiles -->
-                    <div class="flex md:hidden bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
-                        <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
-                        <button id="btn-${idx}-essentiel" onclick="switcherSousOnglet(${idx}, 'essentiel')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">📋 Mesures</button>
-                        <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
-                        <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
+                        <!-- 3 Onglets -->
+                        <div class="flex bg-slate-100 p-1 rounded-xl mb-3 border border-slate-200/50">
+                            <button id="btn-${idx}-vote" onclick="switcherSousOnglet(${idx}, 'vote')" class="flex-1 py-1.5 text-center text-[11px] font-bold text-indigo-700 bg-white rounded-lg shadow-2xs transition">📊 Vote</button>
+                            <button id="btn-${idx}-debat" onclick="switcherSousOnglet(${idx}, 'debat')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">⚖️ Débat</button>
+                            <button id="btn-${idx}-experts" onclick="switcherSousOnglet(${idx}, 'experts')" class="flex-1 py-1.5 text-center text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">🔍 Fact-check</button>
+                        </div>
                     </div>
 
                     <!-- Contenu -->
-                    <div class="space-y-4">
+                    <div class="space-y-3 overflow-y-auto pr-1">
                         
                         <!-- 1. Barres Horizontales des votes -->
-                        <div id="card-${idx}-vote" class="block space-y-2">
-                            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:block mb-2">Ventilation du vote par groupe</h4>
-                            ${genererBarresHorizontales(scrutin.votes_par_groupe)}
+                        <div id="card-${idx}-vote" class="block bg-slate-50/60 p-3 rounded-xl border border-slate-100">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ventilation du vote par groupe</h4>
+                            ${genererBarresHorizontalesUltraCompactes(scrutin.votes_par_groupe)}
                         </div>
 
-                        <!-- Grille Desktop des 3 blocs d'analyse -->
-                        <div class="grid md:grid-cols-3 gap-3">
-                            <div id="card-${idx}-essentiel" class="block space-y-3 pt-1">
-                                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 h-full">
-                                    <strong class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">📋 Ce que change la loi</strong>
-                                    ${blocs.intentionsHtml}
-                                </div>
-                            </div>
-
-                            <div id="card-${idx}-debat" class="hidden md:block space-y-3 pt-1">
-                                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
-                                    <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
-                                    ${blocs.critiqueHtml}
-                                </div>
-                            </div>
-
-                            <div id="card-${idx}-experts" class="hidden md:block pt-1">
-                                <div class="bg-purple-50/60 p-3 rounded-xl border border-purple-200 h-full">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-[10px] font-bold text-purple-950 uppercase tracking-wider">🔍 Fact-check & Experts</span>
-                                    </div>
-                                    <div class="text-slate-700 text-xs leading-relaxed space-y-1">
-                                        ${blocs.expertsHtml}
-                                    </div>
+                        <!-- Fact-check -->
+                        <div id="card-${idx}-experts" class="block pt-0.5">
+                            <div class="bg-purple-50/80 p-3 rounded-xl border border-purple-200 shadow-2xs h-full">
+                                <strong class="block text-[10px] font-bold text-purple-950 uppercase tracking-wider mb-1.5">
+                                    🔍 Fact-check & Éclairage expert
+                                </strong>
+                                <div class="text-slate-700 text-xs leading-relaxed space-y-1">
+                                    ${blocs.expertsHtml}
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Débat -->
+                        <div id="card-${idx}-debat" class="hidden space-y-3 pt-0.5">
+                            <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500 h-full">
+                                <strong class="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">⚖️ Points de clivage & Débats</strong>
+                                ${blocs.critiqueHtml}
+                            </div>
+                        </div>
                     </div>
 
                 </article>`;
             }).join('');
+        }
+
+        function changerSlide(direction) {
+            const container = document.getElementById('scrutins-container');
+            const totalSlides = container.children.length;
+            if (totalSlides === 0) return;
+
+            currentIndex += direction;
+            if (currentIndex < 0) currentIndex = 0;
+            if (currentIndex >= totalSlides) currentIndex = totalSlides - 1;
+
+            const targetSlide = document.getElementById(`slide-${currentIndex}`);
+            if (targetSlide) {
+                targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const cp = document.getElementById('compteur-scrutin');
+                if (cp) cp.innerText = `${currentIndex + 1} / ${totalSlides}`;
+            }
         }
 
         window.addEventListener('DOMContentLoaded', chargerDonnees);
