@@ -23,6 +23,19 @@
         input[type=search]::-webkit-search-cancel-button { display: none; }
         #theme-filters::-webkit-scrollbar { display: none; }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+        /* Confort de lecture : onglets Débat et Fact-check */
+        .lecture { font-size: .9375rem; line-height: 1.55; color: #1e293b; overflow-wrap: break-word; }
+        .lecture p, .lecture li { max-width: 72ch; }
+        .lecture p + p { margin-top: .5rem; }
+        .lecture strong { font-weight: 600; color: #0f172a; }
+        .lecture ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+        .lecture li { position: relative; padding-left: 1.15rem; }
+        .lecture li::before { content: ""; position: absolute; left: 0; top: .55em; width: .45rem; height: .45rem; border-radius: 9999px; background: var(--accent, #64748b); }
+        .lecture .bloc-lecture + .bloc-lecture { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid rgb(15 23 42 / .1); }
+        .lecture .intitule-lecture { font-size: .8125rem; font-weight: 700; line-height: 1.3; margin-bottom: .15rem; color: var(--accent-fort, #334155); }
+        .lecture li > .bloc-lecture + .bloc-lecture { margin-top: .4rem; padding-top: .4rem; }
+        .lecture.replie { max-height: 10.5rem; overflow: hidden; position: relative; }
+        .lecture.replie::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3rem; background: linear-gradient(to bottom, transparent, var(--fond, #fff)); pointer-events: none; }
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
@@ -450,6 +463,26 @@
             }
         }
 
+        function rendreRiche(v) {
+            const cap = k => k.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+            const gras = t => String(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            if (v === null || v === undefined || v === '') return '';
+            if (typeof v === 'string' || typeof v === 'number') {
+                return gras(v).split(/\n+/).map(t => t.trim()).filter(Boolean).map(t => `<p>${t}</p>`).join('');
+            }
+            if (Array.isArray(v)) {
+                const items = v.map(i => { const h = rendreRiche(i); return h ? `<li>${h}</li>` : ''; }).join('');
+                return items ? `<ul>${items}</ul>` : '';
+            }
+            if (typeof v === 'object') {
+                return Object.entries(v).map(([k, val]) => {
+                    const h = rendreRiche(val);
+                    return h ? `<div class="bloc-lecture"><h4 class="intitule-lecture">${cap(k)}</h4>${h}</div>` : '';
+                }).join('');
+            }
+            return '';
+        }
+
         function formaterBlocRiche(contexteObj) {
             if (!contexteObj) return { intentionsHtml: '', critiqueHtml: '', expertsHtml: '' };
 
@@ -471,10 +504,10 @@
                 : `<div class="text-sm text-slate-700">${extraireTexte(intentionsData)}</div>`;
 
             const critiqueData = contexteObj.impact_et_critique || contexteObj.points_de_clivage || Object.values(contexteObj)[1];
-            let critiqueHtml = `<div class="text-sm text-slate-700 space-y-1">${extraireTexte(critiqueData)}</div>`;
+            let critiqueHtml = rendreRiche(critiqueData);
 
             const expertsData = contexteObj.avis_experts || Object.values(contexteObj)[2];
-            let expertsHtml = `<div class="text-sm text-slate-700 space-y-1">${extraireTexte(expertsData)}</div>`;
+            let expertsHtml = rendreRiche(expertsData);
 
             return { intentionsHtml, critiqueHtml, expertsHtml };
         }
@@ -507,6 +540,7 @@
                 const actif = sec === sectionName;
                 // Le fact-check accompagne toujours l'onglet Vote (il explique les votes peu intuitifs)
                 el.hidden = !(actif || (sec === 'experts' && sectionName === 'vote'));
+                if (!el.hidden && sec !== 'vote') verifierLecture(cardIdx, sec);
                 btn.className = actif ? CLS_TAB_ON : CLS_TAB_OFF;
                 btn.setAttribute('aria-selected', actif);
             });
@@ -623,7 +657,7 @@
             if (sc.url || sc.lien) return sc.url || sc.lien;
             const num = sc.numero || sc.numero_scrutin;
             if (num && sc.legislature) return `https://www.assemblee-nationale.fr/dyn/${sc.legislature}/scrutins/${num}`;
-            return 'https://data.assemblee-nationale.fr';
+            return 'https://www.assemblee-nationale.fr/dyn/scrutins';
         }
 
         function deplierObjet(idx) {
@@ -640,7 +674,26 @@
                 const o = document.getElementById('obj-' + i);
                 const b = document.getElementById('more-' + i);
                 if (o && b) b.hidden = o.scrollHeight <= o.clientHeight + 1;
+                verifierLecture(i, 'experts');
             }
+        }
+
+        function verifierLecture(idx, sec) {
+            const c = document.getElementById(`lec-${idx}-${sec}`);
+            const b = document.getElementById(`lecmore-${idx}-${sec}`);
+            if (!c || !b || c.dataset.deplie === '1') return;
+            const tronque = c.scrollHeight > c.clientHeight + 2;
+            b.hidden = !tronque;
+            if (!tronque) c.classList.remove('replie'); // texte court : pas de dégradé
+        }
+
+        function deplierLecture(idx, sec) {
+            const c = document.getElementById(`lec-${idx}-${sec}`);
+            const b = document.getElementById(`lecmore-${idx}-${sec}`);
+            const replie = c.classList.toggle('replie');
+            c.dataset.deplie = replie ? '0' : '1';
+            b.textContent = replie ? 'Lire la suite' : 'Réduire';
+            b.setAttribute('aria-expanded', !replie);
         }
 
         function rendreCarte(scrutin, idx) {
@@ -687,17 +740,19 @@
                     ${genererPanneauVote(scrutin.votes_par_groupe)}
                 </div>
 
-                <div id="card-${idx}-debat" role="tabpanel" aria-labelledby="btn-${idx}-debat" hidden class="bg-amber-50/60 p-3 rounded-xl border border-amber-100 border-l-4 border-l-amber-500">
-                    <strong class="block text-sm font-bold text-amber-900 mb-1">Points de clivage et débats</strong>
-                    ${vide(blocs.critiqueHtml) ? aucune : blocs.critiqueHtml}
+                <div id="card-${idx}-debat" role="tabpanel" aria-labelledby="btn-${idx}-debat" hidden class="bg-amber-50 p-3.5 rounded-xl border border-amber-100 border-l-4 border-l-amber-500" style="--accent:#f59e0b;--accent-fort:#92400e;--fond:#fffbeb">
+                    <strong class="block text-base font-bold text-amber-900 mb-2">Points de clivage et débats</strong>
+                    ${vide(blocs.critiqueHtml) ? aucune : `
+                    <div id="lec-${idx}-debat" class="lecture replie">${blocs.critiqueHtml}</div>
+                    <button type="button" id="lecmore-${idx}-debat" hidden onclick="deplierLecture(${idx}, 'debat')" aria-expanded="false" class="-mb-2 mt-1 min-h-[44px] text-sm font-semibold text-amber-900 underline">Lire la suite</button>`}
                 </div>
 
-                <div id="card-${idx}-experts" role="tabpanel" aria-labelledby="btn-${idx}-experts" class="mt-3 bg-purple-50/80 p-3 rounded-xl border border-purple-200">
-                    <strong class="block text-sm font-bold text-purple-950 mb-1">Fact-check et éclairage d'expert</strong>
+                <div id="card-${idx}-experts" role="tabpanel" aria-labelledby="btn-${idx}-experts" class="mt-3 bg-purple-50 p-3.5 rounded-xl border border-purple-200" style="--accent:#a855f7;--accent-fort:#6b21a8;--fond:#faf5ff">
+                    <strong class="block text-base font-bold text-purple-950 mb-1">Fact-check et éclairage d'expert</strong>
                     <p class="text-xs text-slate-700 mb-2">Contenu généré par IA : à recouper avec la source officielle.</p>
-                    <div class="text-sm text-slate-700 leading-relaxed space-y-1">
-                        ${vide(blocs.expertsHtml) ? aucune : blocs.expertsHtml}
-                    </div>
+                    ${vide(blocs.expertsHtml) ? aucune : `
+                    <div id="lec-${idx}-experts" class="lecture replie">${blocs.expertsHtml}</div>
+                    <button type="button" id="lecmore-${idx}-experts" hidden onclick="deplierLecture(${idx}, 'experts')" aria-expanded="false" class="-mb-2 mt-1 min-h-[44px] text-sm font-semibold text-purple-900 underline">Lire la suite</button>`}
                 </div>
 
                 <p class="mt-3 text-xs text-slate-600"><span aria-hidden="true">✨ </span>Résumé généré par IA : il peut comporter des erreurs.</p>
