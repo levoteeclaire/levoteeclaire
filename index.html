@@ -436,7 +436,7 @@
             const p = new URLSearchParams(location.search);
             scrutinUnique = p.get('s');
             const th = p.get('theme');
-            if (th && scrutinsData.some(x => x.theme_principal === th)) themeActif = th;
+            if (th && scrutinsData.some(x => x.theme === th)) themeActif = th;
             if (['recent', 'ancien'].includes(p.get('tri'))) tri = p.get('tri');
             const q = p.get('q');
             if (q) {
@@ -467,7 +467,7 @@
                     x._id = String(x.id ?? x.uid ?? x.numero ?? i);
                     x._tv = normaliserTexte(x.titre_vulgarise);
                     x._to = normaliserTexte(x.titre_officiel || x.titre);
-                    x._th = normaliserTexte(x.theme_principal);
+                    x._th = normaliserTexte(x.theme);
                     x._ctx = normaliserTexte(JSON.stringify(x.contexte_et_objectif || ''));
                 });
                 scrutinsData = melangerTableau(data);
@@ -540,7 +540,7 @@
 
         function initialiserFiltres() {
             comptesThemes = {};
-            scrutinsData.forEach(x => { if (x.theme_principal) comptesThemes[x.theme_principal] = (comptesThemes[x.theme_principal] || 0) + 1; });
+            scrutinsData.forEach(x => { if (x.theme) comptesThemes[x.theme] = (comptesThemes[x.theme] || 0) + 1; });
         }
 
         // « Santé / Protection sociale » : domaine en gras, sous-thème en retrait
@@ -691,7 +691,7 @@
                 scrutinsFiltresActuels = scrutinsData.filter(x => x._id === scrutinUnique);
             } else if (termeRecherche) {
                 scrutinsFiltresActuels = scrutinsData.map(x => {
-                    if (themeActif !== 'TOUS' && x.theme_principal !== themeActif) return { scrutin: x, score: 0 };
+                    if (themeActif !== 'TOUS' && x.theme !== themeActif) return { scrutin: x, score: 0 };
                     let score = 0;
                     if (x._tv.includes(termeRecherche)) score += 10;
                     if (x._to.includes(termeRecherche)) score += 5;
@@ -703,7 +703,7 @@
                 .sort((a, b) => b.score - a.score)
                 .map(item => item.scrutin);
             } else {
-                scrutinsFiltresActuels = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(x => x.theme_principal === themeActif);
+                scrutinsFiltresActuels = themeActif === 'TOUS' ? scrutinsData : scrutinsData.filter(x => x.theme === themeActif);
             }
 
             if (!scrutinUnique && tri !== 'alea') {
@@ -792,7 +792,7 @@
             <article class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
 
                 <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-2">
-                    <span class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-md">${scrutin.theme_principal || 'Général'}</span>
+                    <span class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-md">${scrutin.theme || 'Général'}</span>
                     <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span class="text-xs text-slate-600">${formaterDate(scrutin.date || scrutin.dateScrutin)}</span>
                         <span class="text-xs font-bold px-2 py-1 rounded-full border ${badgeColor}">${decision}</span>
