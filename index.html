@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Vote Éclairé - Les votes de l'Assemblée nationale</title>
-    <link rel="preload" href="./data_processed/scrutins_enrichis.json" as="fetch" crossorigin="anonymous">
+    <link rel="preload" href="./data_processed3/scrutins_enrichis3.json" as="fetch" crossorigin="anonymous">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -458,7 +459,7 @@
             const conteneur = document.getElementById('scrutins-container');
             conteneur.innerHTML = SQUELETTE;
             try {
-                const response = await fetch('./data_processed/scrutins_enrichis.json');
+                const response = await fetch('./data_processed/scrutins_enrichis3.json');
                 if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 const data = await response.json();
                 // Index de recherche calculé une seule fois + identifiant stable pour le partage
@@ -782,12 +783,9 @@
             
             // Extraction propre du numéro de scrutin après le 'V' (ex: "VT1234" -> "1234")
             // On extrait proprement le numéro du scrutin situé après le dernier 'V' (ex: "VTANR5L16V1024" -> "1024")
-            const match = scrutin.id ? scrutin.id.match(/V(\d+)$/) : null;
-            const numeroScrutin = match ? match[1] : (scrutin.id ? scrutin.id.replace(/\D/g, '') : '');
-            const numLegislature = scrutin.legislature
-
+      
             // Lien officiel de l'Assemblée nationale
-            const lienAssemblee = `https://www.assemblee-nationale.fr/dyn/${numLegislature}/scrutins/${numeroScrutin}`;
+            const lienAssemblee = `https://www.assemblee-nationale.fr/dyn/${scrutin.legislature}/scrutins/${scrutin.numero_scrutin}`;
 
 
             return `
