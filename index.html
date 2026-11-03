@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Vote Éclairé - Les votes de l'Assemblée nationale</title>
-    <link rel="preload" href="./data_processed3/scrutins_enrichis3.json" as="fetch" crossorigin="anonymous">
+    <link rel="preload" href="./data_processed/scrutins_enrichis.json" as="fetch" crossorigin="anonymous">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -45,6 +45,11 @@
         .bg-pour { background-color: #10b981; }
         .bg-contre { background-color: #f43f5e; }
         .bg-abstention { background-color: #cbd5e1; }
+
+
+        .objet-vote { font-size: .875rem; line-height: 1.5; color: #1e293b; overflow-wrap: break-word; }
+        .objet-vote.replie { max-height: 7.5rem; overflow: hidden; position: relative; }
+        .objet-vote.replie::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.5rem; background: linear-gradient(to bottom, transparent, #eff6ff); pointer-events: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
@@ -459,7 +464,7 @@
             const conteneur = document.getElementById('scrutins-container');
             conteneur.innerHTML = SQUELETTE;
             try {
-                const response = await fetch('./data_processed/scrutins_enrichis3.json');
+                const response = await fetch('./data_processed/scrutins_enrichis.json');
                 if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                 const data = await response.json();
                 // Index de recherche calculé une seule fois + identifiant stable pour le partage
@@ -730,10 +735,20 @@
             return 'https://www.assemblee-nationale.fr/dyn/scrutins';
         }
 
+        function verifierObjetVote(idx) {
+            const o = document.getElementById('obj-' + idx);
+            const b = document.getElementById('more-' + idx);
+            if (!o || !b || o.dataset.deplie === '1') return;
+            const tronque = o.scrollHeight > o.clientHeight + 2;
+            b.hidden = !tronque;
+            if (!tronque) o.classList.remove('replie');
+        }
+
         function deplierObjet(idx) {
             const o = document.getElementById('obj-' + idx);
             const b = document.getElementById('more-' + idx);
-            const replie = o.classList.toggle('line-clamp-5');
+            const replie = o.classList.toggle('replie');
+            o.dataset.deplie = replie ? '0' : '1';
             b.textContent = replie ? 'Lire la suite' : 'Réduire';
             b.setAttribute('aria-expanded', !replie);
         }
@@ -741,9 +756,7 @@
         function verifierTroncatures(debut) {
             const fin = Math.min(limiteAffichage, scrutinsFiltresActuels.length);
             for (let i = debut; i < fin; i++) {
-                const o = document.getElementById('obj-' + i);
-                const b = document.getElementById('more-' + i);
-                if (o && b) b.hidden = o.scrollHeight <= o.clientHeight + 1;
+                verifierObjetVote(i);
                 verifierLecture(i, 'experts');
             }
         }
@@ -804,7 +817,7 @@
                     ${vide(blocs.intentionsHtml) ? '' : `
                     <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500">
                         <strong class="block text-xs font-bold text-blue-900 mb-1"><span aria-hidden="true">📋 </span>L'objet du vote</strong>
-                        <div id="obj-${idx}" class="line-clamp-5">${blocs.intentionsHtml}</div>
+                        <div id="obj-${idx}" class="objet-vote replie" data-deplie="0">${blocs.intentionsHtml}</div>
                         <button type="button" id="more-${idx}" hidden onclick="deplierObjet(${idx})" aria-expanded="false" class="mt-1 min-h-[44px] text-sm font-semibold text-indigo-700">Lire la suite</button>
                     </div>`}
                 </div>
